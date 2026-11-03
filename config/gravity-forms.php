@@ -53,8 +53,11 @@ return array(
 		'source_url' => $url_rule,
 	),
 	'gf_entry_meta'             => array(
-		// Keys that aren't field IDs, e.g. add-on feed status, are left alone.
-		'meta_value' => array( $field_value_rule ),
+		// Field values and Save and Continue credentials; other add-on meta stays.
+		'meta_value' => array(
+			$field_value_rule,
+			array( 'constraint' => array( 'meta_key' => array( 'resume_url', 'resume_token' ) ) ),
+		),
 	),
 	'gf_entry_notes'            => $notes_rules,
 	'gf_draft_submissions'      => $draft_rules,

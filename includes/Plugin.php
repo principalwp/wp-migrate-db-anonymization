@@ -56,8 +56,6 @@ class Plugin {
 		$GLOBALS['wpmdb_meta'][ $this->slug ]['version'] = $plugin_version;
 		load_plugin_textdomain( $this->slug, false, dirname( plugin_basename( $this->file_path ) ) . '/languages/' );
 
-		( new Admin( $this->file_path ) )->register();
-
 		add_action( 'plugins_loaded', array( $this, 'bootstrap' ), 21 );
 	}
 
@@ -65,11 +63,6 @@ class Plugin {
 	 * Bootstrap the functionality of the plugin on plugins_loaded so WPMDB already loaded.
 	 */
 	public function bootstrap() {
-		// The WP-CLI command works without WP Migrate, e.g. on a restored backup.
-		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( '\WP_CLI' ) ) {
-			\WP_CLI::add_command( 'migrate-anonymize', new CLI( $this->file_path ) );
-		}
-
 		if ( ! class_exists( 'WPMDB_PHP_Checker') && ! class_exists( 'WPMDB_Base' ) && ! class_exists( 'WPMDB_Command' ) ) {
 			return;
 		}

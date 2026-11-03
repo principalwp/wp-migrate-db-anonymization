@@ -63,8 +63,14 @@ class ShippedConfigTest extends TestCase {
 	/**
 	 * @dataProvider rule_provider
 	 */
-	public function test_fake_data_type_is_a_faker_formatter( $table, $column, array $rule ) {
-		$this->assertArrayHasKey( 'fake_data_type', $rule );
+	public function test_fake_data_type_is_a_faker_formatter_or_rule_blanks_value( $table, $column, array $rule ) {
+		if ( ! array_key_exists( 'fake_data_type', $rule ) ) {
+			$object = new Rule( $table, $column );
+			$object->load( $rule );
+			$this->assertSame( '', $object->anonymize( $this->make_faker() ) );
+			return;
+		}
+
 		$this->assertIsString( $rule['fake_data_type'] );
 
 		$args = isset( $rule['fake_data_args'] ) && is_array( $rule['fake_data_args'] ) ? $rule['fake_data_args'] : array();
@@ -111,7 +117,11 @@ class ShippedConfigTest extends TestCase {
 
 		$value = $object->anonymize( $this->make_faker() );
 
-		$this->assertNotSame( '', $value );
+		if ( array_key_exists( 'fake_data_type', $rule ) ) {
+			$this->assertNotSame( '', $value );
+		} else {
+			$this->assertSame( '', $value );
+		}
 		$this->assertTrue( is_scalar( $value ) || $value instanceof \DateTimeInterface, 'Anonymized value can be stored in a column.' );
 	}
 }
