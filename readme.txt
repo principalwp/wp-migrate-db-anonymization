@@ -31,7 +31,7 @@ Supported plugins:
 
 To preserve specific rows in the users table, use the `WPMDB_ANONYMIZATION_USER_LOGIN_WHITELIST` constant to set a whitelist of comma separated user logins.
 
-Matching fields become numbered placeholders such as `display name 7`, `email7@example.com` and `https://example.com/7`. Metadata uses its parent record's ID; other rows use their first column, the row ID. Passwords are emptied.
+Matching fields become numbered placeholders such as `display name 7`, `email7@example.com` and `https://example.com/7`. Metadata uses its parent record's ID; other rows use their first-column row ID. Gravity Forms drafts use a one-way numeric token hash. Passwords are emptied; existing empty values stay empty.
 
 The configuration rules can be extended with a filter. [Learn how](https://github.com/deliciousbrains/wp-migrate-db-anonymization#extending).
 

@@ -190,7 +190,7 @@ If a constraint lists several columns, all of them must match.
 
 ## Numbered placeholders
 
-Every matching rule replaces a value with `<field label> <N>`, for example `display name 7` or `billing first name 7`. The label is the meta key for metadata, otherwise the column name; leading underscores are dropped and other underscores become spaces. A rule replacing `meta_key` itself uses the label `meta key`. Metadata uses the owning user, post, comment, order, entry, customer or payment token ID for `N`; other rows use their first column, the row ID. Gravity Forms drafts use a token hash as described above.
+Every matching rule replaces a value with `<field label> <N>`, for example `billing first name 7`. The label is the meta key for metadata, otherwise the column name; leading underscores are dropped and other underscores become spaces. A rule replacing `meta_key` itself uses the label `meta key`. Metadata uses the owning user, post, comment, order, entry, customer or payment token ID for `N`; other rows use their first column, the row ID. Gravity Forms drafts use a token hash as described above.
 
 Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for passwords. Coupon email restrictions use it to store a serialized list containing one placeholder address.
 
