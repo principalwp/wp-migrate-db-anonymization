@@ -3,9 +3,8 @@
 namespace WPMDB\Anonymization\Tests\Unit\Config;
 
 use WPMDB\Anonymization\Config\Loader;
-use WPMDB\Anonymization\Tests\Doubles\FakerSpy;
 use WPMDB\Anonymization\Tests\Doubles\InspectableConfig;
-use WPMDB\Anonymization\Tests\Doubles\SqliteWpdb;
+use WPMDB\Anonymization\Tests\Doubles\TablesWpdb;
 use WPMDB\Anonymization\Tests\TestCase;
 
 class LoaderTest extends TestCase {
@@ -82,7 +81,6 @@ class LoaderTest extends TestCase {
 			function ( $config ) {
 				$config['usermeta']['meta_value'][] = array(
 					'constraint'     => array( 'meta_key' => 'dob' ),
-					'fake_data_type' => 'dateTimeThisCentury',
 				);
 				$config['comments']['comment_author_email'] = array(
 					'fake_data_type' => 'email',
@@ -99,7 +97,7 @@ class LoaderTest extends TestCase {
 		$rules = $config->rules( 'usermeta', 'meta_value' );
 		$this->assertCount( 3, $rules );
 		$this->assertTrue( $rules[2]->valid( $this->row( array( 'meta_key' => 'dob' ) ) ) );
-		$this->assertSame( 'dateTimeThisCentury', $rules[2]->anonymize( new FakerSpy() ) );
+		$this->assertSame( 'dob 7', $rules[2]->anonymize( $this->row( array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'dob' ) ) ) );
 	}
 
 	public function test_config_filter_can_remove_tables() {
@@ -140,7 +138,7 @@ class LoaderTest extends TestCase {
 		$config = $this->make_loader( 'plugin-collision' )->init( $this->make_inspectable_config() );
 
 		foreach ( $config->rules( 'users', 'user_email' ) as $rule ) {
-			$this->assertIsString( $rule->anonymize( $this->make_faker() ) );
+			$this->assertIsString( $rule->anonymize( $this->row( array( 'ID' => 7 ) ) ) );
 		}
 	}
 
@@ -199,7 +197,7 @@ class LoaderTest extends TestCase {
 		$this->add_config_files( array( $this->private_rules_file() ) );
 
 		// An empty database: no WooCommerce or Easy Digital Downloads data.
-		$data = ( new Loader( WPMDB_ANONYMIZATION_PLUGIN_FILE ) )->load( new SqliteWpdb() );
+		$data = ( new Loader( WPMDB_ANONYMIZATION_PLUGIN_FILE ) )->load( new TablesWpdb() );
 
 		$this->assertArrayHasKey( 'my_backup_table', $data );
 		$this->assertArrayHasKey( 'users', $data );

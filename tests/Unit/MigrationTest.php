@@ -17,9 +17,7 @@ class MigrationTest extends TestCase {
 			'usermeta' => array(
 				'meta_value' => array(
 					array(
-						'constraint'     => array( 'meta_key' => 'first_name' ),
-						'fake_data_type' => 'numberBetween',
-						'fake_data_args' => array( 42, 42 ),
+						'constraint'     => array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'first_name' ),
 					),
 				),
 			),
@@ -64,7 +62,7 @@ class MigrationTest extends TestCase {
 	}
 
 	protected function make_migration() {
-		return new Migration( $this->make_config( $this->config_data() ), $this->make_faker() );
+		return new Migration( $this->make_config( $this->config_data() ) );
 	}
 
 	public function test_register_hooks_into_wp_migrate() {
@@ -77,12 +75,12 @@ class MigrationTest extends TestCase {
 	 * @dataProvider intent_provider
 	 */
 	public function test_anonymizes_for_export_push_and_pull( $intent, $anonymized ) {
-		$row     = $this->row( array( 'meta_key' => 'first_name' ) );
+		$row     = $this->row( array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'first_name' ) );
 		$replace = $this->replace( $intent, 'wp_usermeta', 'meta_value', $row );
 
 		$result = $this->make_migration()->hook_wpmdb_after_replace_custom_data( 'Jane', false, $replace );
 
-		$this->assertSame( $anonymized ? 42 : 'Jane', $result );
+		$this->assertSame( $anonymized ? 'first name 7' : 'Jane', $result );
 	}
 
 	public static function intent_provider() {
@@ -96,13 +94,13 @@ class MigrationTest extends TestCase {
 	}
 
 	public function test_handles_migration_temp_tables() {
-		$replace = $this->replace( 'pull', '_mig_wp_usermeta', 'meta_value', $this->row( array( 'meta_key' => 'first_name' ) ) );
+		$replace = $this->replace( 'pull', '_mig_wp_usermeta', 'meta_value', $this->row( array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'first_name' ) ) );
 
-		$this->assertSame( 42, $this->make_migration()->hook_wpmdb_after_replace_custom_data( 'Jane', false, $replace ) );
+		$this->assertSame( 'first name 7', $this->make_migration()->hook_wpmdb_after_replace_custom_data( 'Jane', false, $replace ) );
 	}
 
 	public function test_empty_data_is_left_alone() {
-		$replace = $this->replace( 'pull', 'wp_usermeta', 'meta_value', $this->row( array( 'meta_key' => 'first_name' ) ) );
+		$replace = $this->replace( 'pull', 'wp_usermeta', 'meta_value', $this->row( array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'first_name' ) ) );
 
 		$this->assertSame( '', $this->make_migration()->hook_wpmdb_after_replace_custom_data( '', false, $replace ) );
 	}
@@ -113,7 +111,7 @@ class MigrationTest extends TestCase {
 		$posts = $this->replace( 'pull', 'wp_posts', 'post_title', $this->row( array() ) );
 		$this->assertSame( 'Hello', $migration->hook_wpmdb_after_replace_custom_data( 'Hello', false, $posts ) );
 
-		$login = $this->replace( 'pull', 'wp_users', 'user_login', $this->row( array( 'user_login' => 'jane' ) ) );
+		$login = $this->replace( 'pull', 'wp_users', 'user_login', $this->row( array( 'ID' => 7, 'user_login' => 'jane' ) ) );
 		$this->assertSame( 'jane', $migration->hook_wpmdb_after_replace_custom_data( 'jane', false, $login ) );
 	}
 
@@ -124,11 +122,44 @@ class MigrationTest extends TestCase {
 	}
 
 	public function test_single_rule_column_is_anonymized() {
-		$replace = $this->replace( 'savefile', 'wp_users', 'user_email', $this->row( array( 'user_login' => 'jane' ) ) );
+		$replace = $this->replace( 'savefile', 'wp_users', 'user_email', $this->row( array( 'ID' => 7, 'user_login' => 'jane' ) ) );
 
 		$result = $this->make_migration()->hook_wpmdb_after_replace_custom_data( 'jane@example.com', false, $replace );
 
-		$this->assertNotSame( 'jane@example.com', $result );
-		$this->assertNotFalse( filter_var( $result, FILTER_VALIDATE_EMAIL ) );
+		$this->assertSame( 'email7@example.com', $result );
+	}
+
+	public function test_shipped_rules_transform_full_rows_and_keep_order_details() {
+		$data = array_merge_recursive(
+			include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/wordpress.php',
+			include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/woocommerce.php'
+		);
+		$migration = new Migration( $this->make_config( $data ) );
+		$rows = array(
+			array(
+				'users',
+				array( 'ID' => 7, 'user_login' => 'jane', 'user_pass' => 'private-hash', 'user_email' => 'jane@example.org', 'display_name' => 'Jane Buyer', 'user_url' => 'https://private.example.org', 'user_registered' => '2026-10-01 12:00:00' ),
+				array( 'ID' => 7, 'user_login' => 'user login 7', 'user_pass' => '', 'user_email' => 'email7@example.com', 'display_name' => 'display name 7', 'user_url' => 'https://example.com/7', 'user_registered' => '2026-10-01 12:00:00' ),
+			),
+			array(
+				'usermeta',
+				array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => 'billing_first_name', 'meta_value' => 'Jane' ),
+				array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => 'billing_first_name', 'meta_value' => 'billing first name 7' ),
+			),
+			array(
+				'comments',
+				array( 'comment_ID' => 83, 'comment_post_ID' => 42, 'comment_author' => 'Jane Buyer', 'comment_author_email' => 'jane@example.org', 'comment_author_IP' => '203.0.113.7', 'comment_type' => 'order_note', 'comment_content' => 'Call Jane on 555-0142', 'comment_approved' => '1' ),
+				array( 'comment_ID' => 83, 'comment_post_ID' => 42, 'comment_author' => 'comment author 83', 'comment_author_email' => 'email83@example.com', 'comment_author_IP' => 'comment author IP 83', 'comment_type' => 'order_note', 'comment_content' => 'comment content 83', 'comment_approved' => '1' ),
+			),
+		);
+		foreach ( $rows as list( $table, $before, $expected ) ) {
+			$row = $this->row( $before );
+			$after = array();
+			foreach ( $before as $column => $value ) {
+				$replace = $this->replace( 'pull', 'wp_' . $table, $column, $row );
+				$after[ $column ] = $migration->hook_wpmdb_after_replace_custom_data( $value, false, $replace );
+			}
+			$this->assertSame( $expected, $after );
+		}
 	}
 }

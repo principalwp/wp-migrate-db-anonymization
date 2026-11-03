@@ -9,7 +9,6 @@ return array(
 		'meta_value' => array(
 			array(
 				'constraint'     => array( 'meta_key' => 'first_name' ),
-				'fake_data_type' => 'firstName',
 			),
 		),
 	),

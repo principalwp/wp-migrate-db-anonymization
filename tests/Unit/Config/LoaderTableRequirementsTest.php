@@ -114,7 +114,7 @@ class LoaderTableRequirementsTest extends TestCase {
 
 		$this->assertArrayNotHasKey( 'edd_licenses', $config );
 		$this->assertArrayNotHasKey( 'edd_logs_api_requests', $config );
-		$this->assertArrayNotHasKey( 'meta_key', $config['usermeta'], 'No usermeta.meta_value constraint, so the WP-CLI command can push the usermeta rules into SQL.' );
+		$this->assertArrayNotHasKey( 'meta_key', $config['usermeta'] );
 	}
 
 	public function test_credentials_rules_can_be_turned_off() {

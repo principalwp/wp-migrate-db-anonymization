@@ -20,12 +20,9 @@ When the plugin is activated it will anonymize by default. You will need to deac
 
 To preserve specific rows in the users table, use the `WPMDB_ANONYMIZATION_USER_LOGIN_WHITELIST` constant to set a whitelist of comma separated user logins.
 
-To replace all passwords with a hashed default password, set the password using the `WPMDB_ANONYMIZATION_DEFAULT_PASSWORD` constant.
-
-These constants should be defined in the site's wp-config.php file, for example:
+Passwords are emptied. Define the whitelist constant in the site's wp-config.php file:
 
     define( 'WPMDB_ANONYMIZATION_USER_LOGIN_WHITELIST', 'somelogin, anotherloginname' );
-    define( 'WPMDB_ANONYMIZATION_DEFAULT_PASSWORD', 'password123' );
     
 You can also programmatically control which users are whitelisted with the following filter, added to a plugin or mu-plugin file:
 
@@ -47,7 +44,7 @@ You can also programmatically control which users are whitelisted with the follo
     
 ## Covered data
 
-The anonymization rules live in the `config` directory, one file per plugin. Order totals, dates, statuses, product data and IDs are never changed, so reports run on an anonymized copy still add up. The one status that is changed is a WooCommerce webhook's, which is disabled (see [Credentials](#credentials)).
+The anonymization rules live in the `config` directory, one file per plugin. Order totals, dates, statuses, product data and IDs are never changed, so reports run on an anonymized copy still add up. WooCommerce webhook statuses are also replaced (see [Credentials](#credentials)).
 
 - `wordpress.php` (always loaded)
     - `users`: login, password, nicename, email, URL and display name
@@ -56,40 +53,40 @@ The anonymization rules live in the `config` directory, one file per plugin. Ord
 - `woocommerce.php`, including WooCommerce Subscriptions, which stores subscriptions as orders
     - `usermeta`: customer billing and shipping details, VAT number, order attribution user agent, Stripe, WooPayments and PayPal Express customer IDs and PayPal billing agreement
     - `postmeta` and `wc_orders_meta`: order billing and shipping details, address search index, customer IP address and user agent (including order attribution), VAT number and VAT location evidence (YITH WooCommerce EU VAT), Stripe customer and card IDs, PayPal Express customer and payer IDs, PayPal Standard payer details
-    - `postmeta`: coupon email restrictions, replaced with a single fake address so the coupon stays restricted
+    - `postmeta`: coupon email restrictions, replaced with a single placeholder address so the coupon stays restricted
     - `wc_orders`: billing email, IP address, user agent and customer note
     - `wc_order_addresses`: name, company, address, email and phone
     - `wc_customer_lookup`: username, name, email, location and phone numbers
     - `woocommerce_payment_tokens` and `woocommerce_payment_tokenmeta`: gateway token, card last 4 digits and expiry, PayPal email
     - `woocommerce_downloadable_product_permissions`: customer email
     - `wc_download_log`: IP address
-    - `woocommerce_sessions`: replaced with an empty session
+    - `woocommerce_sessions`: session data
     - `wc_stock_notifications`: back in stock sign-up email
-    - `wc_email_unsubscribes`: email hash (WooCommerce 11.0 and 11.1), replaced with a random hash
+    - `wc_email_unsubscribes`: email hash (WooCommerce 11.0 and 11.1)
     - `comments`: content of order notes
 - `easy-digital-downloads.php` (EDD 3.x, plus EDD 2.x data left after upgrading)
     - `edd_customers`, `edd_customer_email_addresses` and `edd_customer_addresses`: name, email, address and EDD 2.x customer notes
     - `edd_orders` and `edd_order_addresses`: email, IP address, name and address
     - `edd_customermeta` and `edd_ordermeta`: company, phone, last login IP, additional emails, Stripe and PayPal customer IDs, PayPal payer email, PayPal Express payer ID, EDD Invoices company and VAT number
     - `edd_notes`: note content
-    - `edd_payment_tokens`: gateway token and customer ID, label (e.g. PayPal email or card last 4 digits), replaced with a generic label, and payment source details, replaced with an empty JSON object
+    - `edd_payment_tokens`: gateway token and customer ID, label (e.g. PayPal email or card last 4 digits), and payment source details
     - `edd_logs_api_requests`, `edd_logs_file_downloads` and `edd_logs_emails`: IP address, user agent and email
     - `edd_subscriptions` (Recurring Payments): notes
     - `edd_license_activations` (Software Licensing): site URL
     - `usermeta` and `postmeta`: Stripe customer IDs, PayPal Express payer ID, EDD 2.x customer address, payment email and IP address, and file download and API request log IP addresses
 - `gravity-forms.php` (Gravity Forms 2.x, plus 1.x tables left after upgrading; loaded if a `gf_entry`, `gf_form` or `rg_lead` table exists)
     - `gf_entry` and `rg_lead`: IP address, user agent and source URL
-    - `gf_entry_meta`, `rg_lead_detail` and `rg_lead_detail_long`: every field value, replaced with a sentence (see [Gravity Forms field values](#gravity-forms-field-values)). Entry meta that isn't a field value, such as add-on feed status, is kept
+    - `gf_entry_meta`, `rg_lead_detail` and `rg_lead_detail_long`: every field value, replaced with a numbered placeholder (see [Gravity Forms field values](#gravity-forms-field-values)). Entry meta that isn't a field value, such as add-on feed status, is kept
     - `gf_entry_notes` and `rg_lead_notes`: note content and author name
-    - `gf_draft_submissions` and `rg_incomplete_submissions` (Save and Continue): email, IP address and source URL; the saved field values are replaced with an empty JSON object, and the resume token is replaced in exports, pushes and pulls (see [Gravity Forms drafts](#gravity-forms-drafts))
+    - `gf_draft_submissions` and `rg_incomplete_submissions` (Save and Continue): email, IP address and source URL; the saved field values and resume token are replaced in exports, pushes and pulls (see [Gravity Forms drafts](#gravity-forms-drafts))
     - `gf_form_view` and `rg_form_view`: IP address
 - `redirection.php` (Redirection; loaded if a `redirection_404` or `redirection_logs` table exists)
-    - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers), replaced with an empty JSON object. The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
+    - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers). The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
 - `credentials.php` (always loaded; see [Credentials](#credentials))
     - `usermeta`: application passwords, Two Factor TOTP secrets, backup codes and email tokens, Metorik cart tokens
     - `postmeta` and `wc_orders_meta`: WooCommerce Print Invoice & Delivery Note guest access and PDF tokens, Metorik cart tokens
     - `woocommerce_api_keys`: consumer key and secret, truncated key and nonces
-    - `wc_webhooks`: secret and delivery URL; the status is set to `disabled`
+    - `wc_webhooks`: secret, delivery URL and status
 - `credentials-easy-digital-downloads.php` (loaded with `easy-digital-downloads.php`; see [Credentials](#credentials))
     - `usermeta`: user API keys
     - `options`: user API keys cached in transients
@@ -121,15 +118,11 @@ To force a plugin's rules on or off, use the `wpmdb_anonymization_load_config_fi
 
 ### Credentials
 
-API keys, tokens and secrets aren't personal data, but they give access to the live site, its customers' orders and downloads, or the services it sends webhooks to, so `credentials.php` replaces them by default. Each is replaced with a random value of the same shape (for example 32 hexadecimal characters for an MD5-style key) so code that checks the format still works, but the replacements aren't working credentials: create new keys on the copy if you need them.
+API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The credential rules replace them with numbered placeholders. These placeholders do not preserve credential formats; create new keys on the copy if you need working credentials.
 
-WooCommerce webhooks are disabled, so the copy never sends order or customer data to the services the live site uses, and their delivery URLs, which often include a token, are replaced with subdomains of the reserved `example.com` domain. To test a webhook on the copy, point it at a test endpoint and set its status back to Active under WooCommerce > Settings > Advanced > Webhooks.
+WooCommerce webhook delivery URLs become `https://example.com/<ID>` and statuses become `status <ID>`. Two Factor TOTP secrets and backup codes are replaced too, so affected users need to set up Two Factor again on the copy, or deactivate that plugin there.
 
-Two Factor TOTP secrets and backup codes are replaced too, so users who set up two-factor authentication on the live site, including whitelisted users, need to set it up again on the copy, or deactivate the Two Factor plugin there.
-
-Easy Digital Downloads credentials are in a separate file, `credentials-easy-digital-downloads.php`, loaded only on sites with EDD data. EDD stores each user's API key as a `usermeta` meta key, so its rule is limited by `meta_value`, and loading it everywhere would make the WP-CLI command read every `usermeta` row on every site.
-
-EDD also caches each user's API keys for an hour in transients named with an MD5 hash that includes the user ID, so they can't be listed in a rule. Any transient with an MD5-style name and value is therefore given a random value of the same shape, which may include a cache another plugin stores the same way. With a [secret](#deterministic-anonymization), a cached key gets the same replacement as the key in `usermeta`. As the transient names can't be listed, the WP-CLI command reads every row of the `options` table on sites with EDD data. Sites with a persistent object cache keep transients there instead of in the database.
+Easy Digital Downloads credentials are in `credentials-easy-digital-downloads.php`, loaded on sites with EDD data. API keys stored in `meta_key` become `meta key <user ID>`, so their original values do not appear in labels. Cached API keys are replaced when a transient has both an MD5-style name and value, so a cache another plugin stores in that form is replaced too. Sites with a persistent object cache keep transients there instead of in the database.
 
 To keep the original credentials, turn both files off:
 
@@ -139,7 +132,7 @@ To keep the original credentials, turn both files off:
 
 ### Gravity Forms field values
 
-Gravity Forms stores each field value in `gf_entry_meta` under the field ID, such as `1`, or the field and input ID, such as `2.3` for the first name of a name field. Knowing which field is an email address, a phone number or a total would mean parsing every form, so every field value is replaced with a sentence. That includes product, quantity and total fields; the payment amount and status on the entry itself are kept.
+Gravity Forms stores each field value in `gf_entry_meta` under the field ID, such as `1`, or the field and input ID, such as `2.3` for the first name of a name field. Knowing which field is an email address, a phone number or a total would mean parsing every form, so every field value is replaced with a numbered placeholder. That includes product, quantity and total fields; the payment amount and status on the entry itself are kept.
 
 The rules for a column are tried in order and the first that matches the row is used, so to treat a form's fields differently, add rules to the start of the list. A constraint can check `form_id` as well as `meta_key`. Values are compared as strings:
 
@@ -154,11 +147,6 @@ The rules for a column are tried in order and the first that matches the row is 
             array(
                 'constraint'     => array( 'form_id' => '3', 'meta_key' => '2' ),
                 'fake_data_type' => 'email',
-            ),
-            // Field 5 of form 3 is a phone number.
-            array(
-                'constraint'     => array( 'form_id' => '3', 'meta_key' => '5' ),
-                'fake_data_type' => 'phoneNumber',
             )
         );
 
@@ -176,20 +164,11 @@ To keep a field's values as they are, skip the rule for those rows with the `wpm
         return $valid;
     }, 10, 3 );
 
-Field IDs are matched with a regular expression, so the WP-CLI command reads every row of `gf_entry_meta` whether or not you add rules like these.
-
 ### Gravity Forms drafts
 
 Save and Continue drafts are stored in `gf_draft_submissions`, or `rg_incomplete_submissions` before Gravity Forms 2.3. Each draft's `uuid` is also its resume token: the `gf_token` in the link sent to the user, which opens the saved entry. Drafts are short-lived resume links; Gravity Forms deletes them after 30 days by default (`gform_incomplete_submissions_expiration_days`).
 
-Exports, pushes and pulls replace the token with a random 32-character hex value, the same format Gravity Forms uses, so tokens in the copy can't open or resume drafts on the live site.
-
-The WP-CLI command can't replace the token, because `uuid` is the table's primary key (see [WP-CLI](#wp-cli)). When anonymizing in place, empty both tables, using your table prefix in place of `wp_`:
-
-    wp db query "TRUNCATE TABLE wp_gf_draft_submissions"
-    wp db query "TRUNCATE TABLE wp_rg_incomplete_submissions"
-
-The second table can only exist on sites that ran Gravity Forms 2.2 or earlier; skip it if it doesn't.
+Exports, pushes and pulls derive a decimal number from the first 52 bits of the token's SHA-256 hash. The token becomes `uuid <number>` and saved field values become `submission <number>`. The replacement UUID fits its 32-character column. A hash collision could give two drafts the same replacement UUID; collisions are not handled.
 
 ### Column constraints
 
@@ -209,99 +188,15 @@ A rule's `constraint` can limit it to rows where another column has a particular
 
 If a constraint lists several columns, all of them must match.
 
-## WP-CLI
+## Numbered placeholders
 
-The `wp migrate-anonymize run` command anonymizes the current database in place, using the same rules as exports, pushes and pulls. WP Migrate doesn't need to be active, so you can use it on a database restored from a backup, straight after importing it locally.
+Every matching rule replaces a value with `<field label> <N>`, for example `display name 7` or `billing first name 7`. The label is the meta key for metadata, otherwise the column name; leading underscores are dropped and other underscores become spaces. A rule replacing `meta_key` itself uses the label `meta key`. Metadata uses the owning user, post, comment, order, entry, customer or payment token ID for `N`; other rows use their first column, the row ID. Gravity Forms drafts use a token hash as described above.
 
-**This permanently overwrites data. Only run it on a copy of a database, never on a live site.**
+Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for passwords. Coupon email restrictions use it to store a serialized list containing one placeholder address.
 
-    # Report how many rows would change, without writing anything
-    wp migrate-anonymize run --dry-run
+These values depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Fields that previously stored JSON, serialized arrays, hashes or fixed values also receive placeholders.
 
-    # Anonymize every configured table
-    wp migrate-anonymize run --yes
-
-    # Only some tables, with a secret for deterministic output (see below)
-    wp migrate-anonymize run --tables=users,usermeta --secret="$ANONYMIZATION_SECRET" --yes
-
-    # Add private rules kept outside the plugin (see "Private rule files" below)
-    wp migrate-anonymize run --rules=/path/private-rules.php --yes
-
-    # A second WordPress install in the same database, using the shop_ prefix
-    wp migrate-anonymize run --prefix=shop_ --yes
-
-    # Unprefixed tables, named exactly as in the rules, e.g. my_backup_table
-    wp migrate-anonymize run --prefix='' --rules=/path/private-rules.php --tables=my_backup_table --yes
-
-Options:
-
-- `--tables=<tables>`: comma-separated config tables, without the table prefix (`users`, `usermeta`, `comments`, `postmeta`, plus any added with the `wpmdb_anonymization_config` filter or a rules file). Defaults to all of them.
-- `--prefix=<prefix>`: process the tables with this prefix instead of the site's `$table_prefix`, for example a second WordPress install in the same database or plugin tables without the WordPress prefix. `--prefix=''` means no prefix: table names are used exactly as written in the rules, so a rule for `my_backup_table` processes the `my_backup_table` table. The prefix may only contain letters, digits and underscores. It is treated as a single site: multisite subsites aren't processed, and the global `users` and `usermeta` tables use this prefix too. The checks for which plugins' data exists (e.g. WooCommerce tables) also use it.
-- `--rules=<files>`: comma-separated paths to extra [rule files](#private-rule-files), added to the bundled rules for this run. The command stops with an error if a file doesn't exist or doesn't return an array.
-- `--secret=<secret>`: enables [deterministic anonymization](#deterministic-anonymization). Takes precedence over the constant and filter.
-- `--batch-size=<number>`: rows fetched per query. Default `1000`.
-- `--dry-run`: count the rows that would change and write nothing.
-- `--yes`: skip the confirmation prompt.
-- `--force`: allow running when `wp_get_environment_type()` is `production`. Without it the command refuses.
-
-Example output:
-
-    Deterministic mode: the same original value always becomes the same fake value.
-    Anonymizing wp_usermeta  100% [24/24]
-    Anonymizing wp_postmeta  100% [13/13]
-    Anonymizing wp_users     100% [4/4]
-    Anonymizing wp_comments  100% [2/2]
-    +-------------+---------+---------+--------+
-    | table       | scanned | changed | errors |
-    +-------------+---------+---------+--------+
-    | wp_usermeta | 24      | 20      | 0      |
-    | wp_postmeta | 13      | 13      | 0      |
-    | wp_users    | 4       | 3       | 0      |
-    | wp_comments | 2       | 2       | 0      |
-    +-------------+---------+---------+--------+
-    Success: Anonymized 38 row(s).
-
-How it works:
-
-- Rows are read in batches ordered by primary key and changed values are written back row by row, one transaction per batch. Tables without a single-column primary key are skipped with a warning.
-- Rules on a table's primary-key column are skipped with a warning: rows are read in key order, so changing the keys would skip or repeat rows. If the keys themselves are personal data, empty such tables instead. Gravity Forms draft resume tokens are one example: see [Gravity Forms drafts](#gravity-forms-drafts).
-- When every rule for a table is limited to specific values of a column, as with the `meta_key` rules for `usermeta` and `postmeta`, only those rows are read (`WHERE meta_key IN (...)`) instead of the whole table.
-- A simple regex constraint, such as a meta key suffix, is read with `LIKE` patterns instead. A regex ending in `$` also matches a value ending in a newline, as it does in PHP, so those rows are read too. A constraint on several columns is pushed down by one of them, the first with exact values or a list, otherwise the first simple regex; the other columns are still checked on each row.
-- The user whitelist constant and filter are respected, and empty values are left empty.
-- On multisite, `users` and `usermeta` are processed once and the other tables are processed for every site, unless `--prefix` is given.
-- The object cache is flushed afterwards.
-- If any row can't be updated, or a query to read a table fails, the command still prints the summary, then exits with an error (non-zero status) saying the database is not fully anonymized. A failed read stops that table and is counted in `errors`; the other tables are still processed. If a batch can't be committed, it is rolled back and its rows are counted in `errors`, not `changed`. A dry run with a failed read also exits with an error.
-- If checking whether a table exists fails, the command stops with an error before changing anything.
-
-Run it once per database. Running it again anonymizes the already fake values, which then no longer match values anonymized from the original data.
-
-## Deterministic anonymization
-
-By default every fake value is random, so the same email address becomes a different fake address in each table and row. That breaks joins and distinct counts on the anonymized data.
-
-Fake email addresses, user names, domain names and URLs are unique in both modes, so columns with a unique index, such as a newsletter plugin's subscriber email or EDD Software Licensing's activation sites, don't break on large databases. Email addresses and user names look like `kshlerin.rosalind.3f9a0c1b2d4e@example.com`: a Faker user name, a 12-character hex fragment and, for email addresses, the reserved `example.com` domain. Domain names and URLs are subdomains of `example.com`, e.g. `schaden-3f9a0c1b2d4e.example.com` and `https://schaden-3f9a0c1b2d4e.example.com/`, so they never point at a real site. Without a secret the fragment is random (from `random_bytes()`); with one it comes from the HMAC described below. Hash-shaped values from the `md5`, `sha1`, `sha256` and `uuid` formatters, such as licence keys and tokens, are unique too: they are built from `random_bytes()` without a secret, or from a keyed hash of the original value with one, rather than by Faker. Other values, such as names and cities, are not made unique and can repeat in random mode, just as they do in real data.
-
-Configure a secret to make anonymization deterministic, in wp-config.php:
-
-    define( 'WPMDB_ANONYMIZATION_SECRET', 'a-long-random-string' );
-
-or with the `--secret` option of the WP-CLI command, or with a filter, for example to read it from an environment variable:
-
-    add_filter( 'wpmdb_anonymization_secret', function ( $secret ) {
-        return getenv( 'WPMDB_ANONYMIZATION_SECRET' ) ?: $secret;
-    } );
-
-With a secret, each fake value is generated by seeding Faker from an HMAC-SHA256 of the original value, keyed by the secret. This applies to WP-CLI runs and to WP Migrate exports, pushes and pulls:
-
-- The same original value always becomes the same fake value, in every table, row and run that uses the same secret. For example, a customer's email address in `users.user_email`, the `billing_email` user meta and the `_billing_email` order meta all become the same fake address, so joins and `COUNT(DISTINCT ...)` give the same answers as on the original data.
-- Email addresses, user names and domain names are trimmed and lower-cased first, so `Alice@Example.org` and `alice@example.org` map to the same fake value. Other values are only trimmed.
-- Fake email addresses, user names, domain names and URLs include a 12-character fragment of the HMAC so different originals don't collide, e.g. `kshlerin.rosalind.3f9a0c1b2d4e@example.com`. Fake email addresses always use the reserved `example.com` domain.
-- Fake `md5`, `sha1`, `sha256` and `uuid` values are taken directly from a second HMAC-SHA256 of the original value rather than from Faker, so different originals don't collide and the same licence key gets the same fake key in every table, such as EDD's licences table and the `_edd_sl_key` post meta.
-- Empty values stay empty. Passwords are never deterministic.
-
-**Keep the secret private.** Use a long random value, don't commit it to version control and don't share it with the anonymized database. Anyone who has the secret can test guesses: they can anonymize a candidate value, such as a known email address, and check whether the result appears in the data. Without the secret, the fake values can't be linked back to the originals.
-
-The fake values come from Faker, so upgrading Faker or changing its locale can change the readable part of a value (the hash fragment in email addresses, user names, domain names and URLs, and hash-shaped values, stay the same). To join or compare datasets, anonymize them with the same secret and plugin version. Faker formatters that are relative to the current date, such as `dateTimeThisYear`, will also change over time.
+A column shorter than its placeholder can truncate the value and produce an import warning under non-strict SQL mode. Numeric and format-specific fields no longer receive values in their original format.
 
 ## Extending
 
@@ -316,8 +211,7 @@ The rules for anonymization can be extended using the `wpmdb_anonymization_confi
      */
     function my_wpmdb_anonymization_rules( $config ) {
         $config['usermeta']['meta_value'][] = array(
-            'constraint'     => array( 'meta_key' => 'dob' ),
-            'fake_data_type' => 'dateTimeThisCentury',
+            'constraint' => array( 'meta_key' => 'dob' ),
         );
 
         return $config;
@@ -325,26 +219,7 @@ The rules for anonymization can be extended using the `wpmdb_anonymization_confi
     
     add_filter( 'wpmdb_anonymization_config', 'my_wpmdb_anonymization_rules' );
 
-If you need to pass arguments to the Faker data method then you can define this using the `fake_data_args` key:
-
-    /**
-     * Anonymizes a users date of birth.
-     *
-     * @param array $config
-     *
-     * @return array
-     */
-    function my_wpmdb_anonymization_rules( $config ) {
-        $config['usermeta']['meta_value'][] = array(
-            'constraint'     => array( 'meta_key' => 'dob' ),
-            'fake_data_type' => 'date',
-            'fake_data_args' => array( 'Y-m-d' ),
-        );
-
-        return $config;
-    }
-    
-    add_filter( 'wpmdb_anonymization_config', 'my_wpmdb_anonymization_rules' );
+The legacy `fake_data_type` key selects special placeholder formatting for `email`, `url`, `domainName` (also a URL) or `password`. Other fields use their label and number. Field names ending in `email` or `url`, and referrer columns, select the corresponding format automatically.
 
 ### Private rule files
 
@@ -357,15 +232,12 @@ Rules you'd rather not put in a plugin, for example for a custom table, can live
             'email'     => array(
                 'fake_data_type' => 'email',
             ),
-            'full_name' => array(
-                'fake_data_type' => 'name',
-            ),
+            'full_name' => array(),
         ),
         'usermeta'        => array(
             'meta_value' => array(
                 array(
-                    'constraint'     => array( 'meta_key' => 'private_phone' ),
-                    'fake_data_type' => 'phoneNumber',
+                    'constraint' => array( 'meta_key' => 'private_phone' ),
                 ),
             ),
         ),
@@ -379,12 +251,10 @@ Add it to every export, push and pull with the `wpmdb_anonymization_config_files
         return $files;
     } );
 
-or to a single WP-CLI run with `--rules=/path/private-rules.php` (see [WP-CLI](#wp-cli)).
-
-- Table names are written without the table prefix, as in the bundled files. With the WP-CLI `--prefix=''` option they are used exactly as written, so a rule for `my_backup_table` processes the table `my_backup_table`.
+- Table names are written without the table prefix, as in the bundled files.
 - Extra files are merged with the bundled rules. If both define the same table and column, both sets of rules are kept, bundled rules first, and each value uses the first rule whose constraint matches. Rules with different constraints, such as different `meta_key` values, therefore all apply. To replace a bundled rule for the same rows, change it with the `wpmdb_anonymization_config` filter instead.
 - Extra files have no requirements, so they are always loaded. The `wpmdb_anonymization_load_config_file` filter receives their file name without `.php` (e.g. `private-rules`) and can turn them off. Don't name a file after a bundled one (such as `wordpress.php`, `woocommerce.php` or `easy-digital-downloads.php`), or that file's requirements apply to it.
-- The file should only return an array, without declaring functions or classes: the WP-CLI command includes it once to check it before the rules are loaded. Paths that aren't files are skipped by the filter; `--rules` reports them as an error.
+- The file returns an array. Paths that aren't files are skipped by the loader.
 
 ## Development
 
@@ -392,7 +262,7 @@ Install the development dependencies with `composer install`.
 
 ### Running tests
 
-The unit tests use PHPUnit and run without a WordPress install. The small set of WordPress functions and classes the plugin uses (`apply_filters()`, `wp_hash_password()`, `WP_User`, `wpdb` and so on) are stubbed in `tests/stubs/`, as is the WP-CLI API. The WP-CLI command tests run against an in-memory SQLite database, so they need the `pdo_sqlite` extension.
+The unit tests use PHPUnit and run without a WordPress install. The small set of WordPress functions and classes the plugin uses (`apply_filters()`, `WP_User`, `wpdb` and so on) are stubbed in `tests/stubs/`.
 
     composer test
 

@@ -8,16 +8,13 @@
  */
 
 $log_rules = array(
-	'ip'           => array( 'fake_data_type' => 'ipv4' ),
-	'agent'        => array( 'fake_data_type' => 'userAgent' ),
+	'ip'           => array(),
+	'agent'        => array(),
 	'referrer'     => array( 'fake_data_type' => 'url' ),
 	// JSON. With the "Log HTTP header" option on it holds every request header,
 	// including forwarded IP addresses; redirect logs can also hold the code
-	// that issued the redirect. Replace with an empty JSON object.
-	'request_data' => array(
-		'fake_data_type' => 'randomElement',
-		'fake_data_args' => array( array( '{}' ) ),
-	),
+	// that issued the redirect. Replace the whole value.
+	'request_data' => array(),
 );
 
 return array(

@@ -3,7 +3,6 @@
 namespace WPMDB\Anonymization\Tests\Unit\Config;
 
 use WPMDB\Anonymization\Config\Rule;
-use WPMDB\Anonymization\Tests\Doubles\FakerSpy;
 use WPMDB\Anonymization\Tests\TestCase;
 
 /**
@@ -129,102 +128,41 @@ class RuleTest extends TestCase {
 	}
 
 	public function test_load_ignores_unknown_keys() {
-		$rule = $this->make_rule(
-			array(
-				'fake_data_type' => 'email',
-				'not_a_property' => 'ignored',
-			)
-		);
+		$rule = $this->make_rule( array( 'not_a_property' => 'ignored' ) );
 
 		$this->assertFalse( property_exists( $rule, 'not_a_property' ) );
-		$this->assertSame( 'email', $rule->anonymize( new FakerSpy() ) );
 	}
 
-	public function test_anonymize_without_fake_data_type_returns_empty_string() {
-		$faker = new FakerSpy();
-		$rule  = $this->make_rule( array( 'constraint' => array( 'meta_key' => 'x' ) ) );
-
-		$this->assertSame( '', $rule->anonymize( $faker ) );
-		$this->assertSame( array(), $faker->calls, 'Faker is not called.' );
+	/**
+	 * @dataProvider placeholder_provider
+	 */
+	public function test_numbered_placeholders( $table, $column, $data, $columns, $expected ) {
+		$this->assertSame( $expected, $this->make_rule( $data, $table, $column )->anonymize( $this->row( $columns ) ) );
 	}
 
-	public function test_anonymize_calls_the_faker_formatter() {
-		$faker = new FakerSpy();
-		$rule  = $this->make_rule( array( 'fake_data_type' => 'firstName' ) );
-
-		$this->assertSame( 'firstName', $rule->anonymize( $faker ) );
-		$this->assertSame( array( array( 'firstName', array() ) ), $faker->calls );
-	}
-
-	public function test_anonymize_passes_fake_data_args() {
-		$faker = new FakerSpy();
-		$rule  = $this->make_rule(
-			array(
-				'fake_data_type' => 'date',
-				'fake_data_args' => array( 'Y-m-d' ),
-			)
+	public static function placeholder_provider() {
+		return array(
+			'column label' => array( 'users', 'display_name', array(), array( 'ID' => 7, 'display_name' => 'Jane' ), 'display name 7' ),
+			'first column is row ID' => array( 'custom', 'name', array(), array( 'custom_id' => 23, 'user_id' => 7 ), 'name 23' ),
+			'user meta parent' => array( 'usermeta', 'meta_value', array(), array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => 'first_name' ), 'first name 7' ),
+			'post meta parent' => array( 'postmeta', 'meta_value', array(), array( 'meta_id' => 92, 'post_id' => 8, 'meta_key' => '_billing_first_name' ), 'billing first name 8' ),
+			'comment meta parent' => array( 'commentmeta', 'meta_value', array(), array( 'meta_id' => 93, 'comment_id' => 9, 'meta_key' => 'akismet_as_submitted' ), 'akismet as submitted 9' ),
+			'order meta parent' => array( 'wc_orders_meta', 'meta_value', array(), array( 'id' => 94, 'order_id' => 10, 'meta_key' => '_billing_phone' ), 'billing phone 10' ),
+			'GF entry meta parent' => array( 'gf_entry_meta', 'meta_value', array(), array( 'id' => 95, 'form_id' => 3, 'entry_id' => 11, 'meta_key' => '2.3' ), '2.3 11' ),
+			'legacy EDD customer meta parent' => array( 'edd_customermeta', 'meta_value', array(), array( 'meta_id' => 96, 'customer_id' => 12, 'meta_key' => 'company_name' ), 'company name 12' ),
+			'EDD customer meta parent' => array( 'edd_customermeta', 'meta_value', array(), array( 'meta_id' => 97, 'edd_customer_id' => 13, 'meta_key' => 'phone' ), 'phone 13' ),
+			'EDD order meta parent' => array( 'edd_ordermeta', 'meta_value', array(), array( 'meta_id' => 98, 'edd_order_id' => 14, 'meta_key' => '_edd_phone' ), 'edd phone 14' ),
+			'WC payment token meta parent' => array( 'woocommerce_payment_tokenmeta', 'meta_value', array(), array( 'meta_id' => 99, 'payment_token_id' => 15, 'meta_key' => 'last4' ), 'last4 15' ),
+			'meta key replacement hides key' => array( 'usermeta', 'meta_key', array(), array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'secret-value' ), 'meta key 7' ),
+			'email column' => array( 'users', 'user_email', array(), array( 'ID' => 7 ), 'email7@example.com' ),
+			'email meta' => array( 'postmeta', 'meta_value', array(), array( 'meta_id' => 1, 'post_id' => 8, 'meta_key' => '_from_email' ), 'email8@example.com' ),
+			'explicit email type' => array( 'gf_entry_meta', 'meta_value', array( 'fake_data_type' => 'email' ), array( 'id' => 1, 'entry_id' => 8, 'meta_key' => '2' ), 'email8@example.com' ),
+			'email hash is a label' => array( 'wc_email_unsubscribes', 'email_hash', array(), array( 'id' => 11 ), 'email hash 11' ),
+			'URL column' => array( 'users', 'user_url', array(), array( 'ID' => 7 ), 'https://example.com/7' ),
+			'referrer column' => array( 'e_submissions', 'referer', array(), array( 'id' => 7 ), 'https://example.com/7' ),
+			'explicit domain type' => array( 'edd_license_activations', 'site_name', array( 'fake_data_type' => 'domainName' ), array( 'id' => 11 ), 'https://example.com/11' ),
+			'password' => array( 'users', 'user_pass', array( 'fake_data_type' => 'password', 'post_process_function' => 'strtoupper' ), array( 'ID' => 7 ), '' ),
+			'post processing' => array( 'usermeta', 'meta_value', array( 'post_process_function' => 'strtoupper' ), array( 'umeta_id' => 1, 'user_id' => 7, 'meta_key' => 'first_name' ), 'FIRST NAME 7' ),
 		);
-
-		$rule->anonymize( $faker );
-
-		$this->assertSame( array( array( 'date', array( 'Y-m-d' ) ) ), $faker->calls );
-	}
-
-	public function test_anonymize_ignores_non_array_fake_data_args() {
-		$faker = new FakerSpy();
-		$rule  = $this->make_rule(
-			array(
-				'fake_data_type' => 'date',
-				'fake_data_args' => 'Y-m-d',
-			)
-		);
-
-		$rule->anonymize( $faker );
-
-		$this->assertSame( array( array( 'date', array() ) ), $faker->calls );
-	}
-
-	public function test_anonymize_with_real_faker_and_args() {
-		$rule = $this->make_rule(
-			array(
-				'fake_data_type' => 'numberBetween',
-				'fake_data_args' => array( 7, 7 ),
-			)
-		);
-
-		$this->assertSame( 7, $rule->anonymize( $this->make_faker() ) );
-	}
-
-	public function test_anonymize_applies_post_process_function() {
-		$rule = $this->make_rule(
-			array(
-				'fake_data_type'        => 'firstName',
-				'post_process_function' => 'strtoupper',
-			)
-		);
-
-		$this->assertSame( 'FIRSTNAME', $rule->anonymize( new FakerSpy() ) );
-	}
-
-	public function test_anonymize_applies_static_method_post_process_function() {
-		$rule = $this->make_rule(
-			array(
-				'fake_data_type'        => 'password',
-				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::password',
-			)
-		);
-
-		$this->assertSame( 'hashed:password', $rule->anonymize( new FakerSpy() ) );
-	}
-
-	public function test_anonymize_ignores_non_callable_post_process_function() {
-		$rule = $this->make_rule(
-			array(
-				'fake_data_type'        => 'firstName',
-				'post_process_function' => 'not_a_real_function',
-			)
-		);
-
-		$this->assertSame( 'firstName', $rule->anonymize( new FakerSpy() ) );
 	}
 }

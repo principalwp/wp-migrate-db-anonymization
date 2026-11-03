@@ -3,7 +3,6 @@
 namespace WPMDB\Anonymization\Tests\Unit\Config;
 
 use WPMDB\Anonymization\Config\Rule;
-use WPMDB\Anonymization\Tests\Doubles\FakerSpy;
 use WPMDB\Anonymization\Tests\TestCase;
 
 class ConfigTest extends TestCase {
@@ -19,11 +18,9 @@ class ConfigTest extends TestCase {
 				'meta_value' => array(
 					array(
 						'constraint'     => array( 'meta_key' => 'first_name' ),
-						'fake_data_type' => 'firstName',
 					),
 					array(
 						'constraint'     => array( 'meta_key' => 'last_name' ),
-						'fake_data_type' => 'lastName',
 					),
 				),
 			),
@@ -41,7 +38,7 @@ class ConfigTest extends TestCase {
 
 	public function test_init_replaces_previous_data() {
 		$config = $this->make_config( $this->sample_data() );
-		$config->init( array( 'comments' => array( 'comment_author' => array( 'fake_data_type' => 'userName' ) ) ) );
+		$config->init( array( 'comments' => array( 'comment_author' => array() ) ) );
 
 		$this->assertFalse( $config->has_table( 'users' ) );
 		$this->assertTrue( $config->has_table( 'comments' ) );
@@ -83,10 +80,10 @@ class ConfigTest extends TestCase {
 		$config = $this->make_config( $this->sample_data() );
 
 		$rules = $config->rules( 'usermeta', 'meta_value' );
-		$faker = new FakerSpy();
+		$row = $this->row( array( 'umeta_id' => 10, 'user_id' => 7, 'meta_key' => 'first_name' ) );
 
-		$this->assertSame( 'firstName', $rules[0]->anonymize( $faker ) );
-		$this->assertSame( 'lastName', $rules[1]->anonymize( $faker ) );
+		$this->assertSame( 'first name 7', $rules[0]->anonymize( $row ) );
+		$this->assertSame( 'last name 7', $rules[1]->anonymize( $this->row( array( 'umeta_id' => 11, 'user_id' => 7, 'meta_key' => 'last_name' ) ) ) );
 	}
 
 	/**

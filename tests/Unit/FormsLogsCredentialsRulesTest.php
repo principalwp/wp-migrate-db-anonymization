@@ -4,8 +4,6 @@ namespace WPMDB\Anonymization\Tests\Unit;
 
 use WPMDB\Anonymization\Anonymizer;
 use WPMDB\Anonymization\Config\Loader;
-use WPMDB\Anonymization\Config\Rule;
-use WPMDB\Anonymization\Deterministic;
 use WPMDB\Anonymization\Tests\Doubles\TablesWpdb;
 use WPMDB\Anonymization\Tests\TestCase;
 
@@ -48,7 +46,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 	 * @return Anonymizer
 	 */
 	protected function make_anonymizer( array $data ) {
-		return new Anonymizer( $this->make_config( $data ), $this->make_faker() );
+		return new Anonymizer( $this->make_config( $data ) );
 	}
 
 	/**
@@ -73,6 +71,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$anonymizer = $this->make_anonymizer( $this->config_file( 'gravity-forms' ) );
 		$row        = $this->row(
 			array(
+				'id'         => 90,
 				'form_id'    => '3',
 				'entry_id'   => '10',
 				'meta_key'   => $meta_key,
@@ -83,7 +82,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$value = $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $row, $row->meta_value );
 
 		if ( $replaced ) {
-			$this->assertNotSame( 'jane@example.org', $value );
+			$this->assertSame( $meta_key . ' 10', $value );
 		} else {
 			$this->assertSame( 'jane@example.org', $value );
 		}
@@ -112,11 +111,11 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$loader     = new Loader( WPMDB_ANONYMIZATION_PLUGIN_FILE );
 		$anonymizer = $this->make_anonymizer( $loader->load( new TablesWpdb( array( 'gf_entry' ) ) ) );
 
-		$form_3 = $this->row( array( 'form_id' => '3', 'meta_key' => '2', 'meta_value' => 'jane@example.org' ) );
-		$form_4 = $this->row( array( 'form_id' => '4', 'meta_key' => '2', 'meta_value' => 'jane@example.org' ) );
+		$form_3 = $this->row( array( 'id' => 90, 'entry_id' => 10, 'form_id' => '3', 'meta_key' => '2', 'meta_value' => 'jane@example.org' ) );
+		$form_4 = $this->row( array( 'id' => 91, 'entry_id' => 11, 'form_id' => '4', 'meta_key' => '2', 'meta_value' => 'jane@example.org' ) );
 
-		$this->assertStringContainsString( '@', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $form_3, $form_3->meta_value ) );
-		$this->assertStringNotContainsString( '@', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $form_4, $form_4->meta_value ) );
+		$this->assertSame( 'email10@example.com', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $form_3, $form_3->meta_value ) );
+		$this->assertSame( '2 11', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $form_4, $form_4->meta_value ) );
 	}
 
 	public function test_gravity_forms_field_can_be_kept_per_form() {
@@ -142,36 +141,43 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$this->assertNotSame( 'Large', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $replaced, $replaced->meta_value ) );
 	}
 
-	public function test_gravity_forms_draft_submission_becomes_an_empty_json_object() {
+	public function test_gravity_forms_draft_submission_becomes_a_placeholder() {
 		$anonymizer = $this->make_anonymizer( $this->config_file( 'gravity-forms' ) );
-		$row        = $this->row( array( 'submission' => '{"submitted_values":{"1":"Jane"}}' ) );
+		$row        = $this->row( array( 'uuid' => 'draft-7', 'submission' => '{"submitted_values":{"1":"Jane"}}' ) );
 
 		foreach ( array( 'gf_draft_submissions', 'rg_incomplete_submissions' ) as $table ) {
-			$this->assertSame( '{}', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
+			$this->assertSame( 'submission 2052409790744771', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
 		}
 	}
 
-	public function test_gravity_forms_draft_uuid_is_replaced_in_the_same_format() {
+	public function test_gravity_forms_draft_uuid_is_replaced_with_a_placeholder() {
 		$data       = $this->config_file( 'gravity-forms' );
 		$anonymizer = $this->make_anonymizer( $data );
 		// Same shape as GFFormsModel::get_uuid(): 32 lowercase hex characters.
-		$row = $this->row( array( 'uuid' => bin2hex( random_bytes( 16 ) ) ) );
+		$row = $this->row( array( 'uuid' => '0123456789abcdef0123456789abcdef', 'email' => 'jane@example.org', 'source_url' => 'https://private.example.org', 'submission' => '{"1":"Jane"}' ) );
+		$other = $this->row( array( 'uuid' => 'fedcba9876543210fedcba9876543210' ) );
 
 		foreach ( array( 'gf_draft_submissions', 'rg_incomplete_submissions' ) as $table ) {
 			$this->assertArrayHasKey( 'uuid', $data[ $table ], "{$table}.uuid has a rule." );
 
 			$value = $anonymizer->anonymize_value( $table, 'uuid', $row, $row->uuid );
 
-			$this->assertMatchesRegularExpression( '/^[0-9a-f]{32}$/', $value );
-			$this->assertNotSame( $row->uuid, $value );
+			$this->assertSame( 'uuid 1102929687319678', $value );
+			$this->assertLessThanOrEqual( 32, strlen( $value ) );
+			$this->assertStringNotContainsString( $row->uuid, $value );
+			$this->assertSame( 'uuid 1330858607208381', $anonymizer->anonymize_value( $table, 'uuid', $other, $other->uuid ) );
+			$this->assertSame( 'email1102929687319678@example.com', $anonymizer->anonymize_value( $table, 'email', $row, $row->email ) );
+			$this->assertSame( 'https://example.com/1102929687319678', $anonymizer->anonymize_value( $table, 'source_url', $row, $row->source_url ) );
+			$this->assertSame( 'submission 1102929687319678', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
 		}
 	}
 
-	public function test_redirection_keeps_the_url_and_empties_request_data() {
+	public function test_redirection_keeps_the_url_and_replaces_request_data() {
 		$data       = $this->config_file( 'redirection' );
 		$anonymizer = $this->make_anonymizer( $data );
 		$row        = $this->row(
 			array(
+				'id'           => 7,
 				'url'          => '/old-page',
 				'request_data' => '{"headers":{"X-Forwarded-For":"203.0.113.9"}}',
 			)
@@ -180,7 +186,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		foreach ( array( 'redirection_404', 'redirection_logs' ) as $table ) {
 			$this->assertArrayNotHasKey( 'url', $data[ $table ] );
 			$this->assertArrayNotHasKey( 'domain', $data[ $table ] );
-			$this->assertSame( '{}', $anonymizer->anonymize_value( $table, 'request_data', $row, $row->request_data ) );
+			$this->assertSame( 'request data 7', $anonymizer->anonymize_value( $table, 'request_data', $row, $row->request_data ) );
 		}
 	}
 
@@ -199,13 +205,15 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$stored_key = self::sample_key();
 		$row        = $this->row(
 			array(
+				'umeta_id'   => 90,
+				'user_id'    => 7,
 				'meta_key'   => $stored_key,
 				'meta_value' => 'edd_user_secret_key',
 			)
 		);
 
 		$key = $anonymizer->anonymize_value( 'usermeta', 'meta_key', $row, $row->meta_key );
-		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $key );
+		$this->assertSame( 'meta key 7', $key );
 		$this->assertNotSame( $stored_key, $key );
 		$this->assertSame( 'edd_user_secret_key', $anonymizer->anonymize_value( 'usermeta', 'meta_value', $row, $row->meta_value ), 'The value marks the row as a secret key, so it is kept.' );
 
@@ -217,25 +225,27 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$anonymizer = $this->make_anonymizer( $this->config_file( 'credentials-easy-digital-downloads' ) );
 		$row        = $this->row(
 			array(
+				'umeta_id'   => 90,
+				'user_id'    => 7,
 				'meta_key'   => 'edd_user_public_key',
 				'meta_value' => self::sample_key(),
 			)
 		);
 
 		$this->assertSame( 'edd_user_public_key', $anonymizer->anonymize_value( 'usermeta', 'meta_key', $row, $row->meta_key ) );
-		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $anonymizer->anonymize_value( 'usermeta', 'meta_value', $row, $row->meta_value ) );
+		$this->assertSame( 'edd user public key 7', $anonymizer->anonymize_value( 'usermeta', 'meta_value', $row, $row->meta_value ) );
 	}
 
 	public function test_edd_api_request_log_keeps_public_requests() {
 		$anonymizer = $this->make_anonymizer( $this->config_file( 'credentials-easy-digital-downloads' ) );
-		$public     = $this->row( array( 'api_key' => 'public', 'token' => 'public' ) );
-		$keyed      = $this->row( array( 'api_key' => self::sample_key(), 'token' => strrev( self::sample_key() ) ) );
+		$public     = $this->row( array( 'id' => 7, 'api_key' => 'public', 'token' => 'public' ) );
+		$keyed      = $this->row( array( 'id' => 7, 'api_key' => self::sample_key(), 'token' => strrev( self::sample_key() ) ) );
 
 		foreach ( array( 'api_key', 'token' ) as $column ) {
 			$this->assertSame( 'public', $anonymizer->anonymize_value( 'edd_logs_api_requests', $column, $public, 'public' ) );
 
 			$value = $anonymizer->anonymize_value( 'edd_logs_api_requests', $column, $keyed, $keyed->{$column} );
-			$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $value );
+			$this->assertSame( str_replace( '_', ' ', $column ) . ' 7', $value );
 			$this->assertNotSame( $keyed->{$column}, $value );
 		}
 	}
@@ -263,7 +273,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 			$keyed = $this->row( array( 'post_id' => '6', 'meta_key' => $meta_key, 'meta_value' => $original ) );
 			$value = $anonymizer->anonymize_value( 'postmeta', 'meta_value', $keyed, $keyed->meta_value );
 
-			$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $value );
+			$this->assertSame( 'edd log ' . substr( $meta_key, 9 ) . ' 6', $value );
 			$this->assertNotSame( $original, $value );
 		}
 	}
@@ -287,7 +297,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$transient  = $this->row( array( 'option_id' => '9', 'option_name' => '_transient_' . $hash, 'option_value' => self::sample_key() ) );
 
 		$value = $anonymizer->anonymize_value( 'options', 'option_value', $transient, $transient->option_value );
-		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $value );
+		$this->assertSame( 'option value 9', $value );
 		$this->assertNotSame( self::sample_key(), $value );
 
 		$timeout = $this->row( array( 'option_id' => '10', 'option_name' => '_transient_timeout_' . $hash, 'option_value' => '1767225600' ) );
@@ -321,23 +331,13 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$this->assertSame( $option_value, $anonymizer->anonymize_value( 'options', 'option_value', $row, $row->option_value ) );
 	}
 
-	public function test_edd_api_key_transient_matches_the_user_meta_key_with_a_secret() {
-		$anonymizer = new Anonymizer( $this->make_config( $this->credentials_config() ), $this->make_faker(), new Deterministic( 'unit-test-secret' ) );
-		$meta       = $this->row( array( 'umeta_id' => '3', 'user_id' => '42', 'meta_key' => self::sample_key(), 'meta_value' => 'edd_user_secret_key' ) );
-		$transient  = $this->row( array( 'option_id' => '9', 'option_name' => '_transient_' . md5( 'edd_api_user_secret_key' . $meta->user_id ), 'option_value' => self::sample_key() ) );
-
-		$this->assertSame(
-			$anonymizer->anonymize_value( 'usermeta', 'meta_key', $meta, $meta->meta_key ),
-			$anonymizer->anonymize_value( 'options', 'option_value', $transient, $transient->option_value )
-		);
-	}
 
 	public function test_edd_2_api_request_log_query_string_is_replaced() {
 		$anonymizer = $this->make_anonymizer( $this->credentials_config() );
 		$query      = 'edd-api=sales&key=' . self::sample_key() . '&token=' . strrev( self::sample_key() ) . '&email=jane%40example.org';
 		$log        = $this->row( array( 'ID' => '5', 'post_type' => 'edd_log', 'post_excerpt' => $query ) );
 
-		$this->assertSame( 'edd-api=', $anonymizer->anonymize_value( 'posts', 'post_excerpt', $log, $log->post_excerpt ), 'Same as edd_logs_api_requests.request.' );
+		$this->assertSame( 'post excerpt 5', $anonymizer->anonymize_value( 'posts', 'post_excerpt', $log, $log->post_excerpt ) );
 
 		$empty = $this->row( array( 'ID' => '6', 'post_type' => 'edd_log', 'post_excerpt' => '' ) );
 		$this->assertSame( '', $anonymizer->anonymize_value( 'posts', 'post_excerpt', $empty, $empty->post_excerpt ), 'Other log types have no excerpt, which stays empty.' );
@@ -348,13 +348,6 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		}
 	}
 
-	public function test_edd_2_api_request_log_rule_can_be_pushed_into_sql() {
-		$data  = $this->config_file( 'credentials-easy-digital-downloads' );
-		$rules = $this->make_config( $data )->rules( 'posts', 'post_excerpt' );
-
-		$this->assertCount( 1, $rules );
-		$this->assertSame( array( 'post_type', array( 'edd_log' ) ), $rules[0]->get_constraint_values() );
-	}
 
 	public function test_edd_software_licensing_2_keys_have_no_public_exception() {
 		$anonymizer = $this->make_anonymizer( $this->credentials_config() );
@@ -362,97 +355,35 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		foreach ( array( '_edd_sl_key', '_edd_sl_renewal_key' ) as $meta_key ) {
 			$row = $this->row( array( 'post_id' => '7', 'meta_key' => $meta_key, 'meta_value' => 'public' ) );
 
-			$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $anonymizer->anonymize_value( 'postmeta', 'meta_value', $row, $row->meta_value ) );
+			$this->assertSame( str_replace( '_', ' ', ltrim( $meta_key, '_' ) ) . ' 7', $anonymizer->anonymize_value( 'postmeta', 'meta_value', $row, $row->meta_value ) );
 		}
 	}
 
-	/**
-	 * Table, column, meta key (or null) and the pattern the replacement must match.
-	 *
-	 * @return array
-	 */
-	public static function credential_shape_provider() {
-		return array(
-			'WooCommerce consumer key'    => array( 'woocommerce_api_keys', 'consumer_key', null, '/^[a-f0-9]{64}$/' ),
-			'WooCommerce consumer secret' => array( 'woocommerce_api_keys', 'consumer_secret', null, '/^cs_[a-f0-9]{40}$/' ),
-			'WooCommerce truncated key'   => array( 'woocommerce_api_keys', 'truncated_key', null, '/^[a-f0-9]{7}$/' ),
-			'WooCommerce API nonces'      => array( 'woocommerce_api_keys', 'nonces', null, '/^a:0:\{\}$/' ),
-			'WooCommerce webhook secret'  => array( 'wc_webhooks', 'secret', null, '/^[A-Za-z0-9]{50}$/' ),
-			'WooCommerce webhook status'  => array( 'wc_webhooks', 'status', null, '/^disabled$/' ),
-			'Application passwords'       => array( 'usermeta', 'meta_value', '_application_passwords', '/^a:0:\{\}$/' ),
-			'Two Factor TOTP secret'      => array( 'usermeta', 'meta_value', '_two_factor_totp_key', '/^[A-Z2-7]{32}$/' ),
-			'Two Factor email token'      => array( 'usermeta', 'meta_value', '_two_factor_email_token', '/^[a-f0-9]{32}$/' ),
-			'Metorik user cart token'     => array( 'usermeta', 'meta_value', '_metorik_cart_token', '/^[a-f0-9]{32}$/' ),
-			'Guest access token'          => array( 'postmeta', 'meta_value', '_guest_access_token', '/^[a-f0-9]{32}$/' ),
-			'Invoice PDF token'           => array( 'postmeta', 'meta_value', '_wcdn_invoice_pdf_token', '/^[a-f0-9]{24}$/' ),
-			'HPOS invoice PDF token'      => array( 'wc_orders_meta', 'meta_value', '_wcdn_invoice_pdf_token', '/^[a-f0-9]{24}$/' ),
-			'HPOS Metorik cart token'     => array( 'wc_orders_meta', 'meta_value', '_metorik_cart_token', '/^[a-f0-9]{32}$/' ),
-			'EDD 2.x log token'           => array( 'postmeta', 'meta_value', '_edd_log_token', '/^[a-f0-9]{32}$/' ),
-			'EDD SL 2.x license key'      => array( 'postmeta', 'meta_value', '_edd_sl_key', '/^[a-f0-9]{32}$/' ),
-			'EDD SL license key'          => array( 'edd_licenses', 'license_key', null, '/^[a-f0-9]{32}$/' ),
-		);
-	}
-
-	/**
-	 * @dataProvider credential_shape_provider
-	 */
-	public function test_credentials_are_replaced_with_values_of_the_same_shape( $table, $column, $meta_key, $pattern ) {
+	public function test_credentials_use_numbered_placeholders() {
 		$anonymizer = $this->make_anonymizer( $this->credentials_config() );
-		$original   = 'original-secret-value';
-		$row        = $this->row( null === $meta_key ? array( $column => $original ) : array( 'meta_key' => $meta_key, $column => $original ) );
-
-		$this->assertMatchesRegularExpression( $pattern, (string) $anonymizer->anonymize_value( $table, $column, $row, $original ) );
-	}
-
-	/**
-	 * @return array
-	 */
-	public static function deterministic_provider() {
-		return array(
-			'random'        => array( '' ),
-			'deterministic' => array( 'unit-test-secret' ),
+		$cases = array(
+			array( 'woocommerce_api_keys', 'consumer_key', array( 'key_id' => 7 ), 'consumer key 7' ),
+			array( 'woocommerce_api_keys', 'consumer_secret', array( 'key_id' => 7 ), 'consumer secret 7' ),
+			array( 'woocommerce_api_keys', 'truncated_key', array( 'key_id' => 7 ), 'truncated key 7' ),
+			array( 'woocommerce_api_keys', 'nonces', array( 'key_id' => 7 ), 'nonces 7' ),
+			array( 'usermeta', 'meta_value', array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => '_application_passwords' ), 'application passwords 7' ),
+			array( 'usermeta', 'meta_value', array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => '_two_factor_totp_key' ), 'two factor totp key 7' ),
+			array( 'postmeta', 'meta_value', array( 'meta_id' => 92, 'post_id' => 8, 'meta_key' => '_wcdn_invoice_pdf_token' ), 'wcdn invoice pdf token 8' ),
+			array( 'wc_orders_meta', 'meta_value', array( 'id' => 93, 'order_id' => 8, 'meta_key' => '_metorik_cart_token' ), 'metorik cart token 8' ),
+			array( 'edd_licenses', 'license_key', array( 'id' => 9 ), 'license key 9' ),
 		);
-	}
-
-	/**
-	 * @dataProvider deterministic_provider
-	 */
-	public function test_webhooks_are_disabled_and_delivered_to_reserved_domains( $secret ) {
-		$anonymizer = new Anonymizer( $this->make_config( $this->config_file( 'credentials' ) ), $this->make_faker(), new Deterministic( $secret ) );
-		$webhook    = $this->row(
-			array(
-				'webhook_id'   => '1',
-				'status'       => 'active',
-				'delivery_url' => 'https://hooks.example.org/woocommerce/order-created',
-			)
-		);
-
-		$url = $anonymizer->anonymize_value( 'wc_webhooks', 'delivery_url', $webhook, $webhook->delivery_url );
-		$this->assertMatchesRegularExpression( '#^https://[a-z0-9-]+-[0-9a-f]{12}\.example\.com/$#', $url );
-
-		foreach ( array( 'active', 'paused', 'disabled' ) as $status ) {
-			$this->assertSame( 'disabled', $anonymizer->anonymize_value( 'wc_webhooks', 'status', $webhook, $status ) );
+		foreach ( $cases as list( $table, $column, $columns, $expected ) ) {
+			$row = $this->row( array_merge( $columns, array( $column => 'original-secret-value' ) ) );
+			$this->assertSame( $expected, $anonymizer->anonymize_value( $table, $column, $row, $row->{$column} ) );
 		}
 	}
 
-	public function test_credentials_meta_rules_can_be_pushed_into_sql() {
-		$meta_tables = array( 'usermeta', 'postmeta', 'wc_orders_meta' );
+	public function test_webhook_status_and_destination_use_placeholders() {
+		$anonymizer = $this->make_anonymizer( $this->config_file( 'credentials' ) );
+		$webhook = $this->row( array( 'webhook_id' => 1, 'status' => 'active', 'delivery_url' => 'https://hooks.example.org/order-created' ) );
 
-		foreach ( array( 'credentials', 'credentials-easy-digital-downloads' ) as $file ) {
-			$data = $this->config_file( $file );
-
-			foreach ( array_intersect( $meta_tables, array_keys( $data ) ) as $table ) {
-				foreach ( $data[ $table ] as $column => $rules ) {
-					foreach ( isset( $rules[0] ) ? $rules : array( $rules ) as $index => $rule ) {
-						// The WP-CLI command pushes the first column of a constraint into SQL.
-						$first = new Rule( $table, $column );
-						$first->load( array( 'constraint' => array_slice( $rule['constraint'], 0, 1, true ) ) );
-
-						$this->assertNotNull( $first->get_constraint_values(), "{$file}.php {$table}.{$column}[{$index}] is limited to a list of values, not a regular expression." );
-					}
-				}
-			}
-		}
+		$this->assertSame( 'https://example.com/1', $anonymizer->anonymize_value( 'wc_webhooks', 'delivery_url', $webhook, $webhook->delivery_url ) );
+		$this->assertSame( 'status 1', $anonymizer->anonymize_value( 'wc_webhooks', 'status', $webhook, $webhook->status ) );
 	}
 
 	public function test_credentials_php_has_no_easy_digital_downloads_rules() {

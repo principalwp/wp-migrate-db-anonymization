@@ -37,6 +37,7 @@ class EddPaymentTokenRuleTest extends TestCase {
 		);
 
 		return (object) array(
+			'id'             => 7,
 			'gateway'        => 'paypal',
 			'type'           => 'paypal',
 			'label'          => 'PayPal - buyer@example.com',
@@ -44,28 +45,29 @@ class EddPaymentTokenRuleTest extends TestCase {
 		);
 	}
 
-	public function test_label_is_replaced_with_a_generic_label() {
+	public function test_label_is_replaced_with_a_numbered_label() {
 		$rule = $this->payment_token_rule( 'label' );
 		$this->assertTrue( $rule->valid( $this->paypal_token_row() ) );
 
-		$value = $rule->anonymize( $this->make_faker() );
+		$value = $rule->anonymize( $this->paypal_token_row() );
 
-		$this->assertSame( 'Saved payment method', $value );
+		$this->assertSame( 'label 7', $value );
 	}
 
-	public function test_payment_source_is_replaced_with_an_empty_json_object() {
+	public function test_payment_source_is_replaced_with_a_numbered_placeholder() {
 		$rule = $this->payment_token_rule( 'payment_source' );
 		$this->assertTrue( $rule->valid( $this->paypal_token_row() ) );
 
-		$value = $rule->anonymize( $this->make_faker() );
+		$value = $rule->anonymize( $this->paypal_token_row() );
 
-		$this->assertSame( '{}', $value );
-		$this->assertSame( array(), json_decode( $value, true ) );
+		$this->assertSame( 'payment source 7', $value );
 	}
 
 	public function test_paypal_payer_email_order_meta_is_anonymized() {
 		$config = include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/easy-digital-downloads.php';
 		$row    = (object) array(
+			'meta_id'    => 90,
+			'edd_order_id' => 7,
 			'meta_key'   => '_edd_paypal_payer_email',
 			'meta_value' => 'buyer@example.com',
 		);
@@ -77,9 +79,8 @@ class EddPaymentTokenRuleTest extends TestCase {
 				continue;
 			}
 
-			$value = $rule->anonymize( $this->make_faker() );
-			$this->assertNotSame( 'buyer@example.com', $value );
-			$this->assertNotFalse( filter_var( $value, FILTER_VALIDATE_EMAIL ) );
+			$value = $rule->anonymize( $row );
+			$this->assertSame( 'email7@example.com', $value );
 
 			return;
 		}

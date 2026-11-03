@@ -2,8 +2,6 @@
 
 namespace WPMDB\Anonymization\Tests;
 
-use Faker\Factory;
-use Faker\Generator;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use WPMDB\Anonymization\Config\Config;
 
@@ -44,18 +42,6 @@ abstract class TestCase extends PHPUnitTestCase {
 		$config->init( $data );
 
 		return $config;
-	}
-
-	/**
-	 * @param int $seed
-	 *
-	 * @return Generator
-	 */
-	protected function make_faker( $seed = 1234 ) {
-		$faker = Factory::create();
-		$faker->seed( $seed );
-
-		return $faker;
 	}
 
 	/**

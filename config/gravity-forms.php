@@ -4,14 +4,13 @@
  * that may remain after upgrading.
  *
  * Entry field values can hold anything a form collects, so every field value
- * is replaced with a sentence: the form definitions would have to be parsed
- * to know which field is an email address, a phone number and so on. To use
+ * is replaced with a numbered placeholder. Form definitions would have to be
+ * parsed to know which field is an email address, a phone number and so on. To use
  * a more specific rule for a field, or to keep a field's values, see the
  * README. Entry IDs, form IDs, dates, statuses and payment details are left
  * untouched.
  */
 
-$ip_rule  = array( 'fake_data_type' => 'ipv4' );
 $url_rule = array(
 	// The page a form was submitted from. Query strings can carry personal data.
 	'fake_data_type' => 'url',
@@ -20,36 +19,29 @@ $url_rule = array(
 // Field values, stored under the field ID, e.g. `1`, or the field and input ID
 // for fields with several inputs, e.g. `2.3` for a name field's first name.
 $field_value_rule = array(
-	'constraint'     => array( 'meta_key' => array( 'regex' => '/^\d+(\.\d+)?$/' ) ),
-	'fake_data_type' => 'sentence',
+	'constraint' => array( 'meta_key' => array( 'regex' => '/^\d+(\.\d+)?$/' ) ),
 );
 
 $draft_rules = array(
-	// The resume token in Save and Continue links (`gf_token`), 32 lowercase hex
-	// characters. Replace it so the copy's tokens can't resume drafts on the live
-	// site. It is the primary key, so the WP-CLI command skips it: empty these
-	// tables instead (see the README).
-	'uuid'       => array( 'fake_data_type' => 'md5' ),
+	// Replace the resume token in Save and Continue links (`gf_token`).
+	'uuid'       => array(),
 	'email'      => array( 'fake_data_type' => 'email' ),
-	'ip'         => $ip_rule,
+	'ip'         => array(),
 	'source_url' => $url_rule,
-	// JSON with the submitted field values. Replace with an empty JSON object.
-	'submission' => array(
-		'fake_data_type' => 'randomElement',
-		'fake_data_args' => array( array( '{}' ) ),
-	),
+	// JSON with the submitted field values. Replace the whole value.
+	'submission' => array(),
 );
 
 $notes_rules = array(
 	// Notes added by admins and add-ons can quote entry details.
-	'value'     => array( 'fake_data_type' => 'sentence' ),
-	'user_name' => array( 'fake_data_type' => 'userName' ),
+	'value'     => array(),
+	'user_name' => array(),
 );
 
 return array(
 	'gf_entry'                  => array(
-		'ip'         => $ip_rule,
-		'user_agent' => array( 'fake_data_type' => 'userAgent' ),
+		'ip'         => array(),
+		'user_agent' => array(),
 		'source_url' => $url_rule,
 	),
 	'gf_entry_meta'             => array(
@@ -62,25 +54,25 @@ return array(
 	'gf_entry_notes'            => $notes_rules,
 	'gf_draft_submissions'      => $draft_rules,
 	'gf_form_view'              => array(
-		'ip' => $ip_rule,
+		'ip' => array(),
 	),
 
 	// Gravity Forms 1.x.
 	'rg_lead'                   => array(
-		'ip'         => $ip_rule,
-		'user_agent' => array( 'fake_data_type' => 'userAgent' ),
+		'ip'         => array(),
+		'user_agent' => array(),
 		'source_url' => $url_rule,
 	),
 	'rg_lead_detail'            => array(
-		'value' => array( 'fake_data_type' => 'sentence' ),
+		'value' => array(),
 	),
 	// Field values longer than 200 characters.
 	'rg_lead_detail_long'       => array(
-		'value' => array( 'fake_data_type' => 'sentence' ),
+		'value' => array(),
 	),
 	'rg_lead_notes'             => $notes_rules,
 	'rg_incomplete_submissions' => $draft_rules,
 	'rg_form_view'              => array(
-		'ip' => $ip_rule,
+		'ip' => array(),
 	),
 );

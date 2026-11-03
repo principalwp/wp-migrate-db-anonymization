@@ -7,8 +7,6 @@ use WPMDB\Anonymization\Config\Rule;
 
 /**
  * Anonymizes a single value for a table/column/row using the config rules.
- *
- * Shared by the WP Migrate integration (Migration) and the WP-CLI command.
  */
 class Anonymizer {
 
@@ -18,16 +16,6 @@ class Anonymizer {
 	protected $config;
 
 	/**
-	 * @var \Faker\Generator
-	 */
-	protected $faker;
-
-	/**
-	 * @var Deterministic|null
-	 */
-	protected $deterministic;
-
-	/**
 	 * Rule objects per table and column, built once.
 	 *
 	 * @var array
@@ -35,14 +23,10 @@ class Anonymizer {
 	protected $rules = array();
 
 	/**
-	 * @param Config             $config
-	 * @param \Faker\Generator   $faker
-	 * @param Deterministic|null $deterministic Resolved from the environment on first use when null.
+	 * @param Config $config
 	 */
-	public function __construct( Config $config, $faker, $deterministic = null ) {
-		$this->config        = $config;
-		$this->faker         = $faker;
-		$this->deterministic = $deterministic;
+	public function __construct( Config $config ) {
+		$this->config = $config;
 	}
 
 	/**
@@ -66,7 +50,7 @@ class Anonymizer {
 			return $value;
 		}
 
-		return $this->generate( $rule, $value );
+		return $rule->anonymize( $row );
 	}
 
 	/**
@@ -89,18 +73,6 @@ class Anonymizer {
 	}
 
 	/**
-	 * Generate the replacement value for an original value using a rule.
-	 *
-	 * @param Rule  $rule
-	 * @param mixed $original
-	 *
-	 * @return mixed
-	 */
-	public function generate( Rule $rule, $original ) {
-		return self::to_db_value( $rule->anonymize( $this->faker, $original, $this->deterministic() ) );
-	}
-
-	/**
 	 * @param string $table
 	 * @param string $column
 	 *
@@ -115,18 +87,6 @@ class Anonymizer {
 	}
 
 	/**
-	 * @return Deterministic
-	 */
-	public function deterministic() {
-		if ( null === $this->deterministic ) {
-			// Resolved lazily so filters added after plugins_loaded are respected.
-			$this->deterministic = Deterministic::from_environment();
-		}
-
-		return $this->deterministic;
-	}
-
-	/**
 	 * Empty originals stay empty: never invent data where none existed.
 	 *
 	 * @param mixed $value
@@ -137,22 +97,4 @@ class Anonymizer {
 		return null === $value || '' === $value;
 	}
 
-	/**
-	 * Convert Faker output to something that can be written to a column.
-	 *
-	 * @param mixed $value
-	 *
-	 * @return mixed
-	 */
-	public static function to_db_value( $value ) {
-		if ( $value instanceof \DateTimeInterface ) {
-			return $value->format( 'Y-m-d H:i:s' );
-		}
-
-		if ( is_array( $value ) || is_object( $value ) ) {
-			return serialize( $value );
-		}
-
-		return $value;
-	}
 }

@@ -120,8 +120,7 @@ class Loader {
 			'easy-digital-downloads'             => array(
 				'tables' => array( 'edd_customers', 'edd_orders' ),
 			),
-			// As easy-digital-downloads. Its rule constrained on usermeta.meta_value makes
-			// the WP-CLI command read every usermeta row, so it mustn't load everywhere.
+			// Loaded with the Easy Digital Downloads personal-data rules.
 			'credentials-easy-digital-downloads' => array(
 				'tables' => array( 'edd_customers', 'edd_orders' ),
 			),

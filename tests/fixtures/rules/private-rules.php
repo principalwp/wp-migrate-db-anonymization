@@ -1,7 +1,7 @@
 <?php
 /**
  * Extra rules in the same format as the bundled config files. Used by the
- * config files filter and --rules tests.
+ * config files filter tests.
  */
 
 return array(
@@ -9,15 +9,12 @@ return array(
 		'email'     => array(
 			'fake_data_type' => 'email',
 		),
-		'full_name' => array(
-			'fake_data_type' => 'name',
-		),
+		'full_name' => array(),
 	),
 	'usermeta'        => array(
 		'meta_value' => array(
 			array(
 				'constraint'     => array( 'meta_key' => 'private_phone' ),
-				'fake_data_type' => 'phoneNumber',
 			),
 		),
 	),

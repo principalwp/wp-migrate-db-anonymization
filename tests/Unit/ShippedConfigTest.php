@@ -17,7 +17,7 @@ class ShippedConfigTest extends TestCase {
 	 *
 	 * @var string[]
 	 */
-	protected static $rule_keys = array( 'fake_data_type', 'fake_data_args', 'post_process_function', 'constraint' );
+	protected static $rule_keys = array( 'fake_data_type', 'post_process_function', 'constraint' );
 
 	/**
 	 * One data set per rule: file, table, column, rule index and rule data.
@@ -63,23 +63,12 @@ class ShippedConfigTest extends TestCase {
 	/**
 	 * @dataProvider rule_provider
 	 */
-	public function test_fake_data_type_is_a_faker_formatter_or_rule_blanks_value( $table, $column, array $rule ) {
-		if ( ! array_key_exists( 'fake_data_type', $rule ) ) {
-			$object = new Rule( $table, $column );
-			$object->load( $rule );
-			$this->assertSame( '', $object->anonymize( $this->make_faker() ) );
-			return;
+	public function test_special_format_is_email_url_or_password( $table, $column, array $rule ) {
+		if ( isset( $rule['fake_data_type'] ) ) {
+			$this->assertContains( $rule['fake_data_type'], array( 'email', 'url', 'domainName', 'password' ) );
+		} else {
+			$this->addToAssertionCount( 1 );
 		}
-
-		$this->assertIsString( $rule['fake_data_type'] );
-
-		$args = isset( $rule['fake_data_args'] ) && is_array( $rule['fake_data_args'] ) ? $rule['fake_data_args'] : array();
-
-		// Throws InvalidArgumentException if the formatter does not exist.
-		$value = call_user_func_array( array( $this->make_faker(), $rule['fake_data_type'] ), $args );
-
-		$this->assertNotNull( $value );
-		$this->assertNotSame( '', $value );
 	}
 
 	/**
@@ -111,17 +100,15 @@ class ShippedConfigTest extends TestCase {
 	/**
 	 * @dataProvider rule_provider
 	 */
-	public function test_rule_anonymizes_with_real_faker( $table, $column, array $rule ) {
+	public function test_rule_produces_a_database_string( $table, $column, array $rule ) {
 		$object = new Rule( $table, $column );
 		$object->load( $rule );
 
-		$value = $object->anonymize( $this->make_faker() );
+		$value = $object->anonymize( $this->row( array( 'ID' => 7 ) ) );
 
-		if ( array_key_exists( 'fake_data_type', $rule ) ) {
-			$this->assertNotSame( '', $value );
-		} else {
+		$this->assertIsString( $value );
+		if ( isset( $rule['fake_data_type'] ) && 'password' === $rule['fake_data_type'] ) {
 			$this->assertSame( '', $value );
 		}
-		$this->assertTrue( is_scalar( $value ) || $value instanceof \DateTimeInterface, 'Anonymized value can be stored in a column.' );
 	}
 }

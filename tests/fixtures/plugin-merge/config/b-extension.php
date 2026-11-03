@@ -4,7 +4,6 @@ return array(
 		'meta_value' => array(
 			array(
 				'constraint'     => array( 'meta_key' => 'billing_phone' ),
-				'fake_data_type' => 'phoneNumber',
 			),
 		),
 	),

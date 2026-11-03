@@ -101,15 +101,6 @@ if ( ! function_exists( 'do_action' ) ) {
 	}
 }
 
-if ( ! function_exists( 'wp_hash_password' ) ) {
-	/**
-	 * Deterministic, clearly fake hash so tests can assert on the input.
-	 */
-	function wp_hash_password( $password ) {
-		return 'hashed:' . $password;
-	}
-}
-
 if ( ! function_exists( '__' ) ) {
 	function __( $text, $domain = 'default' ) {
 		return $text;

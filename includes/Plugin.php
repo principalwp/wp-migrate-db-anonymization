@@ -2,7 +2,6 @@
 
 namespace WPMDB\Anonymization;
 
-use Faker\Factory;
 use WPMDB\Anonymization\Config\Config;
 use WPMDB\Anonymization\Config\Loader;
 
@@ -77,9 +76,7 @@ class Plugin {
 		$loader = new Loader( $this->file_path );
 		$config = $loader->init( new Config( $wpdb, $wpmdb ) );
 
-		$faker = Factory::create();
-
-		$migration = new Migration( $config, $faker, new Anonymizer( $config, $faker ) );
+		$migration = new Migration( $config );
 		$migration->register();
 	}
 
