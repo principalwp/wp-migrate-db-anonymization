@@ -28,8 +28,8 @@ $draft_rules = array(
 	'email'      => array( 'fake_data_type' => 'email' ),
 	'ip'         => array(),
 	'source_url' => $url_rule,
-	// JSON with the submitted field values. Replace the whole value.
-	'submission' => array(),
+	// JSON with the submitted field values. Keep an empty JSON object.
+	'submission' => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_json_object' ),
 );
 
 $notes_rules = array(

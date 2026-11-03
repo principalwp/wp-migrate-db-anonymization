@@ -141,12 +141,12 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		$this->assertNotSame( 'Large', $anonymizer->anonymize_value( 'gf_entry_meta', 'meta_value', $replaced, $replaced->meta_value ) );
 	}
 
-	public function test_gravity_forms_draft_submission_becomes_a_placeholder() {
+	public function test_gravity_forms_draft_submission_becomes_an_empty_json_object() {
 		$anonymizer = $this->make_anonymizer( $this->config_file( 'gravity-forms' ) );
 		$row        = $this->row( array( 'uuid' => 'draft-7', 'submission' => '{"submitted_values":{"1":"Jane"}}' ) );
 
 		foreach ( array( 'gf_draft_submissions', 'rg_incomplete_submissions' ) as $table ) {
-			$this->assertSame( 'submission 2052409790744771', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
+			$this->assertSame( '{}', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
 		}
 	}
 
@@ -168,7 +168,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 			$this->assertSame( 'uuid 1330858607208381', $anonymizer->anonymize_value( $table, 'uuid', $other, $other->uuid ) );
 			$this->assertSame( 'email1102929687319678@example.com', $anonymizer->anonymize_value( $table, 'email', $row, $row->email ) );
 			$this->assertSame( 'https://example.com/1102929687319678', $anonymizer->anonymize_value( $table, 'source_url', $row, $row->source_url ) );
-			$this->assertSame( 'submission 1102929687319678', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
+			$this->assertSame( '{}', $anonymizer->anonymize_value( $table, 'submission', $row, $row->submission ) );
 		}
 	}
 
@@ -186,7 +186,7 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 		foreach ( array( 'redirection_404', 'redirection_logs' ) as $table ) {
 			$this->assertArrayNotHasKey( 'url', $data[ $table ] );
 			$this->assertArrayNotHasKey( 'domain', $data[ $table ] );
-			$this->assertSame( 'request data 7', $anonymizer->anonymize_value( $table, 'request_data', $row, $row->request_data ) );
+			$this->assertSame( '{}', $anonymizer->anonymize_value( $table, 'request_data', $row, $row->request_data ) );
 		}
 	}
 
@@ -365,9 +365,6 @@ class FormsLogsCredentialsRulesTest extends TestCase {
 			array( 'woocommerce_api_keys', 'consumer_key', array( 'key_id' => 7 ), 'consumer key 7' ),
 			array( 'woocommerce_api_keys', 'consumer_secret', array( 'key_id' => 7 ), 'consumer secret 7' ),
 			array( 'woocommerce_api_keys', 'truncated_key', array( 'key_id' => 7 ), 'truncated key 7' ),
-			array( 'woocommerce_api_keys', 'nonces', array( 'key_id' => 7 ), 'nonces 7' ),
-			array( 'usermeta', 'meta_value', array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => '_application_passwords' ), 'application passwords 7' ),
-			array( 'usermeta', 'meta_value', array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => '_two_factor_totp_key' ), 'two factor totp key 7' ),
 			array( 'postmeta', 'meta_value', array( 'meta_id' => 92, 'post_id' => 8, 'meta_key' => '_wcdn_invoice_pdf_token' ), 'wcdn invoice pdf token 8' ),
 			array( 'wc_orders_meta', 'meta_value', array( 'id' => 93, 'order_id' => 8, 'meta_key' => '_metorik_cart_token' ), 'metorik cart token 8' ),
 			array( 'edd_licenses', 'license_key', array( 'id' => 9 ), 'license key 9' ),

@@ -129,6 +129,52 @@ class MigrationTest extends TestCase {
 		$this->assertSame( 'email7@example.com', $result );
 	}
 
+	public static function structured_field_provider() {
+		$serialized = serialize( array( 'private' => 'jane@example.org' ) );
+		$json       = '{"private":"jane@example.org"}';
+
+		return array(
+			'login sessions'       => array( 'wordpress', 'usermeta', 'meta_value', array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'session_tokens' ), $serialized, 'a:0:{}' ),
+			'events location'      => array( 'wordpress', 'usermeta', 'meta_value', array( 'umeta_id' => 91, 'user_id' => 7, 'meta_key' => 'community-events-location' ), $serialized, 'a:0:{}' ),
+			'pending email'        => array( 'wordpress', 'usermeta', 'meta_value', array( 'umeta_id' => 92, 'user_id' => 7, 'meta_key' => '_new_email' ), serialize( array( 'hash' => 'private-hash', 'newemail' => 'jane@example.org' ) ), 'a:0:{}' ),
+			'application passwords' => array( 'credentials', 'usermeta', 'meta_value', array( 'umeta_id' => 93, 'user_id' => 7, 'meta_key' => '_application_passwords' ), $serialized, 'a:0:{}' ),
+			'Two Factor backups'   => array( 'credentials', 'usermeta', 'meta_value', array( 'umeta_id' => 94, 'user_id' => 7, 'meta_key' => '_two_factor_backup_codes' ), $serialized, 'a:0:{}' ),
+			'OAuth nonces'         => array( 'credentials', 'woocommerce_api_keys', 'nonces', array( 'key_id' => 8 ), $serialized, 'a:0:{}' ),
+			'EDD customer address' => array( 'easy-digital-downloads', 'usermeta', 'meta_value', array( 'umeta_id' => 95, 'user_id' => 7, 'meta_key' => '_edd_user_address' ), $serialized, 'a:0:{}' ),
+			'WooCommerce session'  => array( 'woocommerce', 'woocommerce_sessions', 'session_value', array( 'session_id' => 9 ), $serialized, 'a:0:{}' ),
+			'GF draft'             => array( 'gravity-forms', 'gf_draft_submissions', 'submission', array( 'uuid' => '0123456789abcdef0123456789abcdef' ), $json, '{}' ),
+			'legacy GF draft'      => array( 'gravity-forms', 'rg_incomplete_submissions', 'submission', array( 'uuid' => 'fedcba9876543210fedcba9876543210' ), $json, '{}' ),
+			'Redirection 404'      => array( 'redirection', 'redirection_404', 'request_data', array( 'id' => 10 ), $json, '{}' ),
+			'Redirection log'      => array( 'redirection', 'redirection_logs', 'request_data', array( 'id' => 11 ), $json, '{}' ),
+			'EDD payment source'   => array( 'easy-digital-downloads', 'edd_payment_tokens', 'payment_source', array( 'id' => 12 ), $json, '{}' ),
+		);
+	}
+
+	/**
+	 * @dataProvider structured_field_provider
+	 */
+	public function test_shipped_rules_clear_structured_fields_to_their_original_empty_containers( $file, $table, $column, $columns, $before, $expected ) {
+		$migration = new Migration( $this->make_config( include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/' . $file . '.php' ) );
+		$row       = $this->row( array_merge( $columns, array( $column => $before ) ) );
+
+		foreach ( array( 'savefile', 'push', 'pull' ) as $intent ) {
+			$replace = $this->replace( $intent, 'wp_' . $table, $column, $row );
+
+			$this->assertSame( $expected, $migration->hook_wpmdb_after_replace_custom_data( $before, false, $replace ) );
+		}
+	}
+
+	public function test_shipped_totp_secret_is_cleared_in_exports_pushes_and_pulls() {
+		$migration = new Migration( $this->make_config( include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/credentials.php' ) );
+		$row       = $this->row( array( 'umeta_id' => 96, 'user_id' => 7, 'meta_key' => '_two_factor_totp_key', 'meta_value' => str_repeat( 'A', 32 ) ) );
+
+		foreach ( array( 'savefile', 'push', 'pull' ) as $intent ) {
+			$replace = $this->replace( $intent, 'wp_usermeta', 'meta_value', $row );
+
+			$this->assertSame( '', $migration->hook_wpmdb_after_replace_custom_data( $row->meta_value, false, $replace ) );
+		}
+	}
+
 	public function test_shipped_rules_transform_full_rows_and_keep_order_details() {
 		$data = array_merge_recursive(
 			include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/wordpress.php',

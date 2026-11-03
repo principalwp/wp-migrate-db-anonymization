@@ -4,8 +4,9 @@
  *
  * Not personal data, but they grant access to the live site or its customers'
  * orders, downloads and licenses, so they shouldn't leave it. Each one is
- * replaced with a numbered placeholder. The replacements aren't usable
- * credentials: generate new keys on the copy if you need working ones.
+ * replaced with a numbered placeholder, except arrays stay empty arrays and
+ * TOTP secrets are emptied. Generate new keys on the copy if you need working
+ * credentials.
  *
  * Always loaded. Each rule only does anything if its table or meta key exists.
  * Easy Digital Downloads credentials are in credentials-easy-digital-downloads.php,
@@ -45,7 +46,8 @@ return array(
 				// Application passwords (WordPress core) are an array of hashed
 				// passwords, with the IP address each was last used from. Two Factor
 				// backup codes are an array of hashed codes.
-				'constraint' => array( 'meta_key' => array( 'in' => array( '_application_passwords', '_two_factor_backup_codes' ) ) ),
+				'constraint'            => array( 'meta_key' => array( 'in' => array( '_application_passwords', '_two_factor_backup_codes' ) ) ),
+				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
 			),
 			array(
 				// Two Factor email login token (wp_hash() of the code) and Metorik
@@ -53,8 +55,9 @@ return array(
 				'constraint' => array( 'meta_key' => array( 'in' => array( '_two_factor_email_token', '_metorik_cart_token' ) ) ),
 			),
 			array(
-				// Two Factor TOTP secret: 160 bits, base32 encoded.
-				'constraint' => array( 'meta_key' => '_two_factor_totp_key' ),
+				// Clear the TOTP secret so Two Factor treats it as unavailable.
+				'constraint'     => array( 'meta_key' => '_two_factor_totp_key' ),
+				'fake_data_type' => 'password',
 			),
 		),
 	),
@@ -71,7 +74,7 @@ return array(
 		// Last 7 characters of the key, shown in the admin.
 		'truncated_key'   => array(),
 		// Serialized array of recently used OAuth 1.0a nonces.
-		'nonces'          => array(),
+		'nonces'          => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array' ),
 	),
 	'wc_webhooks'          => array(
 		// Used to sign webhook payloads.

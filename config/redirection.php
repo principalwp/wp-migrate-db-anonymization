@@ -13,8 +13,8 @@ $log_rules = array(
 	'referrer'     => array( 'fake_data_type' => 'url' ),
 	// JSON. With the "Log HTTP header" option on it holds every request header,
 	// including forwarded IP addresses; redirect logs can also hold the code
-	// that issued the redirect. Replace the whole value.
-	'request_data' => array(),
+	// that issued the redirect. Keep an empty JSON object.
+	'request_data' => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_json_object' ),
 );
 
 return array(

@@ -31,9 +31,9 @@ Supported plugins:
 
 To preserve specific rows in the users table, use the `WPMDB_ANONYMIZATION_USER_LOGIN_WHITELIST` constant to set a whitelist of comma separated user logins.
 
-Matching fields become numbered placeholders such as `display name 7`, `email7@example.com` and `https://example.com/7`. Metadata uses its parent record's ID; other rows use their first-column row ID. Gravity Forms drafts use a one-way numeric token hash. Passwords are emptied; existing empty values stay empty.
+Matching scalar fields become numbered placeholders such as `display name 7`, `email7@example.com` and `https://example.com/7`. Metadata uses its parent record's ID; other rows use their first-column row ID. Gravity Forms drafts use a one-way numeric token hash. Passwords and Two Factor TOTP secrets are emptied. Fields previously cleared to empty serialized arrays or JSON objects keep those containers; existing empty values stay empty.
 
-The configuration rules can be extended with a filter. [Learn how](https://github.com/deliciousbrains/wp-migrate-db-anonymization#extending).
+The configuration rules can be extended with a filter. [Learn how](https://github.com/principalwp/wp-migrate-db-anonymization#extending).
 
 == Installation ==
 
@@ -46,13 +46,14 @@ The configuration rules can be extended with a filter. [Learn how](https://githu
 
 * New: Admin notice on the Plugins and WP Migrate screens explaining that the addon belongs on the live (source) site, tailored to the site's environment type
 * Improvement: Replace generated fake data with numbered field placeholders and empty passwords; remove Faker and the unused in-place WP-CLI command
+* Bug Fix: Keep previously empty serialized arrays and JSON objects, and clear Two Factor TOTP secrets
 * Improvement: Require PHP 7.4+ and WordPress 5.9+, tested up to WordPress 6.8
 * Improvement: PHP 8.x compatibility
 * Bug Fix: Fatal error instead of a notice when the vendor directory is missing
 * Improvement: Anonymize WooCommerce HPOS orders, customer lookup, payment tokens, downloads and sessions, Easy Digital Downloads 3 customers, orders and logs, and comment user agents; only load a plugin's rules when its data is in the database (#27); match multisite subsite tables (#28); support list and regex column constraints (#19)
 * Improvement: Anonymize pending email changes and signup IP addresses in user meta; WooCommerce order attribution user agents, VAT numbers, PayPal Express and Stripe card IDs, PayPal token emails, coupon email restrictions and back in stock sign-ups; Easy Digital Downloads customer and subscription notes, license activation sites, EDD Invoices details, PayPal Express payer IDs and EDD 2.x addresses and log IP addresses
 * New: `wpmdb_anonymization_config_files` filter for private rule files
-* Improvement: Anonymize Gravity Forms entries, notes and saved drafts and Redirection logs, and replace API keys, tokens and secrets (WordPress application passwords, Two Factor, WooCommerce, Easy Digital Downloads and others) with numbered placeholders, including WooCommerce webhook statuses; credentials can be kept with the `wpmdb_anonymization_load_config_file` filter
+* Improvement: Anonymize Gravity Forms entries, notes and saved drafts and Redirection logs, and replace scalar API keys, tokens and secrets with numbered placeholders, including WooCommerce webhook statuses; TOTP secrets are emptied and credential arrays become empty arrays; credentials can be kept with the `wpmdb_anonymization_load_config_file` filter
 
 = 0.3.4 - 2019-05-21 =
 

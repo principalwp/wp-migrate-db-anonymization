@@ -39,8 +39,9 @@ return array(
 			),
 			array(
 				// Login sessions and the dashboard events location both store IP addresses,
-				// and a pending email change stores the new address.
-				'constraint' => array( 'meta_key' => array( 'in' => array( 'session_tokens', 'community-events-location', '_new_email' ) ) ),
+				// and a pending email change stores the new address. Keep empty arrays.
+				'constraint'            => array( 'meta_key' => array( 'in' => array( 'session_tokens', 'community-events-location', '_new_email' ) ) ),
+				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
 			),
 			array(
 				// Registration IP, written by several membership and registration plugins.

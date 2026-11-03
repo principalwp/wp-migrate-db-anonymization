@@ -118,9 +118,9 @@ To force a plugin's rules on or off, use the `wpmdb_anonymization_load_config_fi
 
 ### Credentials
 
-API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The credential rules replace them with numbered placeholders. These placeholders do not preserve credential formats; create new keys on the copy if you need working credentials.
+API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The credential rules replace scalar values with numbered placeholders, except TOTP secrets are emptied. Application passwords, Two Factor backup codes and OAuth nonces become empty serialized arrays. Create new keys on the copy if you need working credentials; placeholders do not preserve credential formats.
 
-WooCommerce webhook delivery URLs become `https://example.com/<ID>` and statuses become `status <ID>`. Two Factor TOTP secrets and backup codes are replaced too, so affected users need to set up Two Factor again on the copy, or deactivate that plugin there.
+WooCommerce webhook delivery URLs become `https://example.com/<ID>` and statuses become `status <ID>`. Affected users need to set up Two Factor again on the copy, or deactivate that plugin there.
 
 Easy Digital Downloads credentials are in `credentials-easy-digital-downloads.php`, loaded on sites with EDD data. API keys stored in `meta_key` become `meta key <user ID>`, so their original values do not appear in labels. Cached API keys are replaced when a transient has both an MD5-style name and value, so a cache another plugin stores in that form is replaced too. Sites with a persistent object cache keep transients there instead of in the database.
 
@@ -168,7 +168,7 @@ To keep a field's values as they are, skip the rule for those rows with the `wpm
 
 Save and Continue drafts are stored in `gf_draft_submissions`, or `rg_incomplete_submissions` before Gravity Forms 2.3. Each draft's `uuid` is also its resume token: the `gf_token` in the link sent to the user, which opens the saved entry. Drafts are short-lived resume links; Gravity Forms deletes them after 30 days by default (`gform_incomplete_submissions_expiration_days`).
 
-Exports, pushes and pulls derive a decimal number from the first 52 bits of the token's SHA-256 hash. The token becomes `uuid <number>` and saved field values become `submission <number>`. The replacement UUID fits its 32-character column. A hash collision could give two drafts the same replacement UUID; collisions are not handled.
+Exports, pushes and pulls derive a decimal number from the first 52 bits of the token's SHA-256 hash. The token becomes `uuid <number>` and saved field values become an empty JSON object (`{}`). The replacement UUID fits its 32-character column. A hash collision could give two drafts the same replacement UUID; collisions are not handled.
 
 ### Column constraints
 
@@ -190,11 +190,13 @@ If a constraint lists several columns, all of them must match.
 
 ## Numbered placeholders
 
-Every matching rule replaces a value with `<field label> <N>`, for example `billing first name 7`. The label is the meta key for metadata, otherwise the column name; leading underscores are dropped and other underscores become spaces. A rule replacing `meta_key` itself uses the label `meta key`. Metadata uses the owning user, post, comment, order, entry, customer or payment token ID for `N`; other rows use their first column, the row ID. Gravity Forms drafts use a token hash as described above.
+Matching scalar fields become `<field label> <N>`, for example `billing first name 7`. The label is the meta key for metadata, otherwise the column name; leading underscores are dropped and other underscores become spaces. A rule replacing `meta_key` itself uses the label `meta key`. Metadata uses the owning user, post, comment, order, entry, customer or payment token ID for `N`; other rows use their first column, the row ID. Gravity Forms drafts use a token hash as described above.
 
-Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for passwords. Coupon email restrictions use it to store a serialized list containing one placeholder address.
+Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords and TOTP secrets become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for fields using the password format. Coupon email restrictions use it to store a serialized list containing one placeholder address.
 
-These values depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Fields that previously stored JSON, serialized arrays, hashes or fixed values also receive placeholders.
+Fields previously cleared to empty serialized arrays or JSON objects keep those empty containers. This covers WordPress sessions, events location and pending email changes; application passwords, backup codes and OAuth nonces; WooCommerce sessions; EDD addresses and payment sources; Gravity Forms drafts; and Redirection request data.
+
+Placeholders depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Hashes and fixed scalar values also receive placeholders.
 
 A column shorter than its placeholder can truncate the value and produce an import warning under non-strict SQL mode. Numeric and format-specific fields no longer receive values in their original format.
 

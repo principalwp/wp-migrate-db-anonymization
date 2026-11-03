@@ -213,7 +213,7 @@ return array(
 		'user_ip_address' => array(),
 	),
 	'woocommerce_sessions'                         => array(
-		'session_value' => array(),
+		'session_value' => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array' ),
 	),
 	'wc_stock_notifications'                       => array(
 		// Back in stock notification sign-ups.

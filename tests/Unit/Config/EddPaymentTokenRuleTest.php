@@ -54,13 +54,14 @@ class EddPaymentTokenRuleTest extends TestCase {
 		$this->assertSame( 'label 7', $value );
 	}
 
-	public function test_payment_source_is_replaced_with_a_numbered_placeholder() {
+	public function test_payment_source_is_replaced_with_an_empty_json_object() {
 		$rule = $this->payment_token_rule( 'payment_source' );
 		$this->assertTrue( $rule->valid( $this->paypal_token_row() ) );
 
 		$value = $rule->anonymize( $this->paypal_token_row() );
 
-		$this->assertSame( 'payment source 7', $value );
+		$this->assertSame( '{}', $value );
+		$this->assertSame( array(), json_decode( $value, true ) );
 	}
 
 	public function test_paypal_payer_email_order_meta_is_anonymized() {

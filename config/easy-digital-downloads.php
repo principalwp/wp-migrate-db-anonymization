@@ -93,8 +93,8 @@ return array(
 		'label'               => array(),
 		// PayPal's full payment source response as JSON, which can include the
 		// payer's email, name and address, or the cardholder's name and card
-		// details. Replace the whole value with a numbered placeholder.
-		'payment_source'      => array(),
+		// details. Replace with an empty JSON object.
+		'payment_source'      => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_json_object' ),
 	),
 	'edd_logs_api_requests'        => array(
 		'ip' => array(),
@@ -118,8 +118,9 @@ return array(
 	'usermeta'                     => array(
 		'meta_value' => array(
 			array(
-				// EDD 2.x customer address, a serialized array.
-				'constraint' => array( 'meta_key' => '_edd_user_address' ),
+				// EDD 2.x customer address. Keep an empty serialized array.
+				'constraint'            => array( 'meta_key' => '_edd_user_address' ),
+				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
 			),
 			$gateway_customer_id_rule,
 		),
