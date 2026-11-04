@@ -107,7 +107,11 @@ class ShippedConfigTest extends TestCase {
 		$object = new Rule( $table, $column );
 		$object->load( $rule );
 
-		$value = $object->anonymize_value( $this->row( array( 'ID' => 7 ) ), '[]' );
+		$input = '[]';
+		if ( isset( $rule['replacement_function'] ) && 'WPMDB\\Anonymization\\Config\\Replacement::cf7_credentials' === $rule['replacement_function'] ) {
+			$input = serialize( array( 'version' => '6.2.4.1' ) );
+		}
+		$value = $object->anonymize_value( $this->row( array( 'ID' => 7 ) ), $input );
 
 		$this->assertIsString( $value );
 		if ( isset( $rule['fake_data_type'] ) && 'password' === $rule['fake_data_type'] ) {

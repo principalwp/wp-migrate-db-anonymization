@@ -9,12 +9,12 @@ use WPMDB\Anonymization\Tests\TestCase;
 
 class ReviewFixRulesTest extends TestCase {
 
-	public function test_only_nonpublic_ordinary_comment_bodies_are_replaced() {
+	public function test_nonpublic_comment_and_product_review_bodies_are_replaced() {
 		$anonymizer = new Anonymizer( $this->make_config( include WPMDB_ANONYMIZATION_PLUGIN_DIR . '/config/akismet.php' ) );
 		foreach ( array( 'comment', '', 'pingback', 'trackback', 'order_note', 'review' ) as $type ) {
 			foreach ( array( '0', 'spam', 'trash', 'post-trashed', '1' ) as $status ) {
 				$row = $this->row( array( 'comment_ID' => 7, 'comment_type' => $type, 'comment_approved' => $status, 'comment_content' => 'Private message' ) );
-				$expected = in_array( $type, array( 'comment', '', 'pingback', 'trackback' ), true ) && '1' !== $status ? 'comment content 7' : 'Private message';
+				$expected = in_array( $type, array( 'comment', '', 'pingback', 'trackback', 'review' ), true ) && '1' !== $status ? 'comment content 7' : 'Private message';
 				$this->assertSame( $expected, $anonymizer->anonymize_value( 'comments', 'comment_content', $row, $row->comment_content ), $type . ':' . $status );
 			}
 		}

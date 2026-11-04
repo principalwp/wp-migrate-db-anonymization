@@ -5,6 +5,19 @@ namespace WPMDB\Anonymization\Config;
 class Replacement {
 
 	/**
+	 * Remove Contact Form 7 integrations while retaining its other settings.
+	 *
+	 * @param string $value
+	 * @return string
+	 */
+	public static function cf7_credentials( $value ) {
+		$option = unserialize( $value, array( 'allowed_classes' => false ) );
+		unset( $option['stripe'], $option['sendinblue'], $option['constant_contact'], $option['recaptcha'], $option['turnstile'] );
+
+		return serialize( $option );
+	}
+
+	/**
 	 * Mark a WordPress transient as a cache miss after import.
 	 *
 	 * @return string

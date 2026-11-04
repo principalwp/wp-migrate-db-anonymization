@@ -29,12 +29,7 @@ return array(
 	'options'  => array(
 		// Jetpack's country lookup embeds the visitor IP in both transient names.
 		'option_name' => array(
-			array(
-				'constraint' => array( 'option_name' => array( 'regex' => '/^_transient_(timeout_)?geoip_/' ) ),
-			),
-			array(
-				'constraint' => array( 'option_name' => array( 'regex' => '/^jpsq_[^-]+-/' ) ),
-			),
+			'constraint' => array( 'option_name' => array( 'regex' => '/^_transient_(timeout_)?geoip_/' ) ),
 		),
 		'option_value' => array(
 			array(
@@ -52,7 +47,6 @@ return array(
 		),
 	),
 	'jetpack_sync_queue' => array(
-		'queue_id'      => array(),
 		'event_payload' => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array' ),
 	),
 );

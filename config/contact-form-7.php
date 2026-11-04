@@ -3,6 +3,12 @@
 $post_rule = array( 'constraint' => array( 'post_type' => array( 'flamingo_inbound', 'flamingo_contact' ) ) );
 
 return array(
+	'options'  => array(
+		'option_value' => array(
+			'constraint'           => array( 'option_name' => 'wpcf7' ),
+			'replacement_function' => 'WPMDB\\Anonymization\\Config\\Replacement::cf7_credentials',
+		),
+	),
 	'posts'    => array(
 		'post_title'   => $post_rule,
 		'post_content' => $post_rule,

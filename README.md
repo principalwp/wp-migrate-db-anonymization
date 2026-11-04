@@ -83,24 +83,26 @@ The anonymization rules live in the `config` directory, one file per plugin. Ord
 - `contact-form-7.php` (Flamingo 2.6.4)
     - `posts`: titles, content, excerpts and email/subject-derived slugs for `flamingo_contact` and `flamingo_inbound`
     - `postmeta`: contact email/name/properties; message subject/sender, field values, request metadata, spam-service payloads and consent. Arrays become empty serialized arrays; scalar fields receive placeholders. Contact dates and submission statuses are kept
+    - `options.wpcf7` (Contact Form 7 6.2.4.1): removes Stripe, Brevo (`sendinblue`), Constant Contact, reCAPTCHA and Turnstile integration entries, keeping the version and other settings
 - `elementor-pro.php` (Elementor Pro 4.3.2, classic and Atomic Forms)
     - `e_submissions`: IP address, user agent, referring URL/title and JSON metadata
     - `e_submissions_values`: every submitted field value; `e_submissions_actions_log`: action log text
-    - `options`: the Mailchimp, ActiveCampaign, ConvertKit, Drip, GetResponse and MailerLite API credentials become empty strings
+    - `options`: the Mailchimp, ActiveCampaign, ConvertKit, Drip, GetResponse and MailerLite API credentials, Stripe live/test secret keys and reCAPTCHA/v3 secret keys become empty strings. The Elementor Pro licence key is kept
+    - `usermeta`: site-prefixed `elementor_connect_common_data` becomes an empty serialized array, removing Connect tokens
     - `postmeta._elementor_data`: removes those six services' custom API credentials and Slack/Discord webhook URLs from Forms widgets, including templates and revisions. Other document settings and layout are kept, with WP Migrate's URL replacements
 - `simple-history.php` (Simple History 5.36.0)
     - `simple_history`: message and the grouping fingerprint derived from logged values; `simple_history_contexts`: every context value, including names, profile changes, comment text, notes and request details. JSON lists/objects become empty containers. Event detail and context classification values are removed too
     - `options`: the RSS bearer secret becomes empty; quick-stat and oldest-event transient payloads become serialized false so their readers recompute; email report recipients become one numbered example.com address
 - `akismet.php` (Akismet 5.7.2)
     - `commentmeta`: submitted-comment copies and moderation history become empty serialized arrays; moderator logins receive placeholders. Result/status metadata and original public comment bodies are kept
-    - `comments`: bodies of ordinary comments, legacy comments, pingbacks and trackbacks receive placeholders when pending, spam, trashed or attached to a trashed post. Approved bodies and other comment types are kept
+    - `comments`: bodies of ordinary comments, legacy comments, pingbacks, trackbacks and WooCommerce product reviews (`review`, checked against WooCommerce 11.2.1) receive placeholders when pending, spam, trashed or attached to a trashed post. Approved bodies and other comment types are kept
     - `options.wordpress_api_key`: becomes an empty string
 - `jetpack-forms.php` (Jetpack 16.4-a.7 Forms)
     - `posts`: feedback titles, excerpts and author-derived slugs; feedback content becomes `{"fields":[]}`, retaining the list Jetpack's JSON reader requires
     - `postmeta`: extra answers, spam-check payloads and notification emails become empty serialized arrays; webhook responses become empty JSON objects and webhook errors receive placeholders. Source-page IDs and test flags are kept
     - `options`: geolocation cache transient names, which contain the submitter IP, receive row-numbered placeholders; country values and timeout values are kept
     - `options`: the Forms signing secret becomes empty and `jetpack_private_options` becomes an empty serialized array, removing connection tokens
-    - Jetpack Sync queue payloads in `jpsq_<queue>-...` options and `jetpack_sync_queue.event_payload` become empty serialized arrays. Copied option names and table queue IDs receive numbered placeholders, so the rows are no longer selected by the live queues. Production queues are unchanged
+    - Jetpack Sync queue payloads in `jpsq_<queue>-...` options and `jetpack_sync_queue.event_payload` become empty serialized arrays. Queue option names and table queue IDs are kept; the copy cannot sync because its Jetpack tokens are cleared. Production queues are unchanged
 - `redirection.php` (Redirection; loaded if a `redirection_404` or `redirection_logs` table exists)
     - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers). The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
 - `credentials.php` (always loaded; see [Credentials](#credentials))
@@ -221,7 +223,11 @@ Fields previously cleared to empty serialized arrays or JSON objects keep those 
 
 Placeholders depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Hashes and fixed scalar values also receive placeholders.
 
-Shared metadata rules match keys without looking up the owning post type. A key such as Flamingo's `_name` is therefore replaced on any post using that key. Site-specific filters can override these rules.
+## Known limitations
+
+Shared metadata rules match keys without looking up the owning post type. A key such as Flamingo's `_name` is therefore replaced on any post using that key. These rules also rewrite ACF's hidden `field_...` references for matching keys, such as `_name`, `_email`, `_fields` and keys starting with `_field_`. ACF fields with those names can lose their formatting or stop working on the copy. Site-specific filters can override these rules.
+
+WP Migrate Pro skips the anonymization hooks for serialized `options.option_value` values matching `/r:\d+;/i`, including literal text such as `r:1;`. Those option values can retain credentials or personal data in exports, pushes and pulls, including Jetpack Sync payloads and Simple History caches. This is an accepted limitation; the add-on does not change Pro's reference check.
 
 The form and log rules cover the named versions' database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Generic webhook destinations and dynamic credentials are outside the named Elementor settings. Elementor form names and field identifiers remain configuration; Simple History keeps context key names.
 

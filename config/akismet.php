@@ -9,7 +9,7 @@ return array(
 	'comments'    => array(
 		'comment_content' => array(
 			'constraint' => array(
-				'comment_type'     => array( 'comment', '', 'pingback', 'trackback' ),
+				'comment_type'     => array( 'comment', '', 'pingback', 'trackback', 'review' ),
 				'comment_approved' => array( '0', 'spam', 'trash', 'post-trashed' ),
 			),
 		),
