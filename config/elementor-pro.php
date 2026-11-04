@@ -29,12 +29,6 @@ return array(
 			),
 		),
 	),
-	'postmeta'                  => array(
-		'meta_value' => array(
-			'constraint'           => array( 'meta_key' => '_elementor_data' ),
-			'replacement_function' => 'WPMDB\\Anonymization\\Config\\Replacement::elementor_form_credentials',
-		),
-	),
 	'e_submissions'             => array(
 		'user_ip'       => array(),
 		'user_agent'    => array(),

@@ -5,8 +5,8 @@ $post_rule = array( 'constraint' => array( 'post_type' => array( 'flamingo_inbou
 return array(
 	'options'  => array(
 		'option_value' => array(
-			'constraint'           => array( 'option_name' => 'wpcf7' ),
-			'replacement_function' => 'WPMDB\\Anonymization\\Config\\Replacement::cf7_credentials',
+			'constraint'            => array( 'option_name' => 'wpcf7' ),
+			'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
 		),
 	),
 	'posts'    => array(

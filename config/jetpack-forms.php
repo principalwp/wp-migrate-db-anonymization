@@ -7,7 +7,7 @@ return array(
 		'post_name'    => $post_rule,
 		'post_content' => array(
 			'constraint'            => array( 'post_type' => 'feedback' ),
-			'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_feedback_json',
+			'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_json_object',
 		),
 		'post_excerpt' => $post_rule,
 	),

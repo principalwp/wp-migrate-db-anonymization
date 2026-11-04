@@ -46,77 +46,20 @@ You can also programmatically control which users are whitelisted with the follo
 
 The anonymization rules live in the `config` directory, one file per plugin. Order totals, order dates and statuses, product data and numeric record IDs are kept, so order reports on an anonymized copy still add up. WooCommerce webhook statuses are also replaced (see [Credentials](#credentials)).
 
-- `wordpress.php` (always loaded)
-    - `users`: login, password, nicename, email, URL and display name
-    - `usermeta`: first name, last name, nickname, description, `session_tokens` and `community-events-location` (both store IP addresses), `_new_email` (pending email change) and `signup_ip` (registration IP written by membership and registration plugins)
-    - `comments`: author, email, URL, IP address and user agent
-- `woocommerce.php`, including WooCommerce Subscriptions, which stores subscriptions as orders
-    - `usermeta`: customer billing and shipping details, VAT number, order attribution user agent, Stripe, WooPayments and PayPal Express customer IDs and PayPal billing agreement
-    - `postmeta` and `wc_orders_meta`: order billing and shipping details, address search index, customer IP address and user agent (including order attribution), VAT number and VAT location evidence (YITH WooCommerce EU VAT), Stripe customer and card IDs, PayPal Express customer and payer IDs, PayPal Standard payer details
-    - `postmeta`: coupon email restrictions, replaced with a single placeholder address so the coupon stays restricted
-    - `wc_orders`: billing email, IP address, user agent and customer note
-    - `wc_order_addresses`: name, company, address, email and phone
-    - `wc_customer_lookup`: username, name, email, location and phone numbers
-    - `woocommerce_payment_tokens` and `woocommerce_payment_tokenmeta`: gateway token, card last 4 digits and expiry, PayPal email
-    - `woocommerce_downloadable_product_permissions`: customer email
-    - `wc_download_log`: IP address
-    - `woocommerce_sessions`: session data
-    - `wc_stock_notifications`: back in stock sign-up email
-    - `wc_email_unsubscribes`: email hash (WooCommerce 11.0 and 11.1)
-    - `comments`: content of order notes
-- `easy-digital-downloads.php` (EDD 3.x, plus EDD 2.x data left after upgrading)
-    - `edd_customers`, `edd_customer_email_addresses` and `edd_customer_addresses`: name, email, address and EDD 2.x customer notes
-    - `edd_orders` and `edd_order_addresses`: email, IP address, name and address
-    - `edd_customermeta` and `edd_ordermeta`: company, phone, last login IP, additional emails, Stripe and PayPal customer IDs, PayPal payer email, PayPal Express payer ID, EDD Invoices company and VAT number
-    - `edd_notes`: note content
-    - `edd_payment_tokens`: gateway token and customer ID, label (e.g. PayPal email or card last 4 digits), and payment source details
-    - `edd_logs_api_requests`, `edd_logs_file_downloads` and `edd_logs_emails`: IP address, user agent and email
-    - `edd_subscriptions` (Recurring Payments): notes
-    - `edd_license_activations` (Software Licensing): site URL
-    - `usermeta` and `postmeta`: Stripe customer IDs, PayPal Express payer ID, EDD 2.x customer address, payment email and IP address, and file download and API request log IP addresses
-- `gravity-forms.php` (Gravity Forms 2.x, plus 1.x tables left after upgrading; loaded if a `gf_entry`, `gf_form` or `rg_lead` table exists)
-    - `gf_entry` and `rg_lead`: IP address, user agent and source URL
-    - `gf_entry_meta`, `rg_lead_detail` and `rg_lead_detail_long`: every field value, replaced with a numbered placeholder (see [Gravity Forms field values](#gravity-forms-field-values)). Entry meta that isn't a field value, such as add-on feed status, is kept
-    - `gf_entry_notes` and `rg_lead_notes`: note content and author name
-    - `gf_draft_submissions` and `rg_incomplete_submissions` (Save and Continue): email, IP address and source URL; the saved field values and resume token are replaced in exports, pushes and pulls (see [Gravity Forms drafts](#gravity-forms-drafts))
-    - `gf_form_view` and `rg_form_view`: IP address
-- `contact-form-7.php` (Flamingo 2.6.4)
-    - `posts`: titles, content, excerpts and email/subject-derived slugs for `flamingo_contact` and `flamingo_inbound`
-    - `postmeta`: contact email/name/properties; message subject/sender, field values, request metadata, spam-service payloads and consent. Arrays become empty serialized arrays; scalar fields receive placeholders. Contact dates and submission statuses are kept
-    - `options.wpcf7` (Contact Form 7 6.2.4.1): removes Stripe, Brevo (`sendinblue`), Constant Contact, reCAPTCHA and Turnstile integration entries, keeping the version and other settings
-- `elementor-pro.php` (Elementor Pro 4.3.2, classic and Atomic Forms)
-    - `e_submissions`: IP address, user agent, referring URL/title and JSON metadata
-    - `e_submissions_values`: every submitted field value; `e_submissions_actions_log`: action log text
-    - `options`: the Mailchimp, ActiveCampaign, ConvertKit, Drip, GetResponse and MailerLite API credentials, Stripe live/test secret keys and reCAPTCHA/v3 secret keys become empty strings. The Elementor Pro licence key is kept
-    - `usermeta`: site-prefixed `elementor_connect_common_data` becomes an empty serialized array, removing Connect tokens
-    - `postmeta._elementor_data`: removes those six services' custom API credentials and Slack/Discord webhook URLs from Forms widgets, including templates and revisions. Other document settings and layout are kept, with WP Migrate's URL replacements
-- `simple-history.php` (Simple History 5.36.0)
-    - `simple_history`: message and the grouping fingerprint derived from logged values; `simple_history_contexts`: every context value, including names, profile changes, comment text, notes and request details. JSON lists/objects become empty containers. Event detail and context classification values are removed too
-    - `options`: the RSS bearer secret becomes empty; quick-stat and oldest-event transient payloads become serialized false so their readers recompute; email report recipients become one numbered example.com address
-- `akismet.php` (Akismet 5.7.2)
-    - `commentmeta`: submitted-comment copies and moderation history become empty serialized arrays; moderator logins receive placeholders. Result/status metadata and original public comment bodies are kept
-    - `comments`: bodies of ordinary comments, legacy comments, pingbacks, trackbacks and WooCommerce product reviews (`review`, checked against WooCommerce 11.2.1) receive placeholders when pending, spam, trashed or attached to a trashed post. Approved bodies and other comment types are kept
-    - `options.wordpress_api_key`: becomes an empty string
-- `jetpack-forms.php` (Jetpack 16.4-a.7 Forms)
-    - `posts`: feedback titles, excerpts and author-derived slugs; feedback content becomes `{"fields":[]}`, retaining the list Jetpack's JSON reader requires
-    - `postmeta`: extra answers, spam-check payloads and notification emails become empty serialized arrays; webhook responses become empty JSON objects and webhook errors receive placeholders. Source-page IDs and test flags are kept
-    - `options`: geolocation cache transient names, which contain the submitter IP, receive row-numbered placeholders; country values and timeout values are kept
-    - `options`: the Forms signing secret becomes empty and `jetpack_private_options` becomes an empty serialized array, removing connection tokens
-    - Jetpack Sync queue payloads in `jpsq_<queue>-...` options and `jetpack_sync_queue.event_payload` become empty serialized arrays. Queue option names and table queue IDs are kept; the copy cannot sync because its Jetpack tokens are cleared. Production queues are unchanged
-- `redirection.php` (Redirection; loaded if a `redirection_404` or `redirection_logs` table exists)
-    - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers). The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
-- `credentials.php` (always loaded; see [Credentials](#credentials))
-    - `usermeta`: application passwords, Two Factor TOTP secrets, backup codes and email tokens, Metorik cart tokens
-    - `postmeta` and `wc_orders_meta`: WooCommerce Print Invoice & Delivery Note guest access and PDF tokens, Metorik cart tokens
-    - `woocommerce_api_keys`: consumer key and secret, truncated key and nonces
-    - `wc_webhooks`: secret, delivery URL and status
-- `credentials-easy-digital-downloads.php` (loaded with `easy-digital-downloads.php`; see [Credentials](#credentials))
-    - `usermeta`: user API keys
-    - `options`: user API keys cached in transients
-    - `postmeta`: EDD 2.x API log keys and tokens, EDD Software Licensing 2.x license keys
-    - `posts`: query string of EDD 2.x API request logs (the excerpt of `edd_log` posts)
-    - `edd_logs_api_requests`: API key, token and request query string. In both API request logs, `public`, which EDD records as the key and token of a request made without an API key, is kept
-    - `edd_licenses`: license key
+| Rule file | Clears |
+|---|---|
+| `wordpress.php` | User identity, passwords, selected profile/session metadata, and comment author/contact/request data. |
+| `woocommerce.php` | Customer and order contact details, payment identifiers, sessions, order notes, download IPs, notification emails and unsubscribe hashes, including Subscriptions and legacy order storage. Totals, dates, statuses, products and numeric IDs are kept. |
+| `easy-digital-downloads.php` | Customer and order contact details, payment identifiers, notes, log contact/request data, subscription notes and license activation URLs, including legacy EDD storage. |
+| `gravity-forms.php` | Entry fields, request details, notes, draft values and resume tokens, and form-view IPs. Field values receive numbered placeholders. |
+| `contact-form-7.php` | Flamingo contact/message titles, content, excerpts, slugs and personal metadata; arrays become empty serialized arrays and scalar fields receive placeholders. The entire `wpcf7` option becomes an empty serialized array, clearing integrations and other settings. |
+| `elementor-pro.php` | Submission fields, request details, JSON metadata and action logs; Mailchimp, ActiveCampaign, ConvertKit, Drip, GetResponse, MailerLite, Stripe and reCAPTCHA option credentials; and site-prefixed Connect tokens. The Elementor Pro licence key is kept. |
+| `simple-history.php` | Messages, grouping fingerprints and all context values, with JSON lists/objects emptied. Also clears the RSS secret, replaces cached quick-stat/oldest-event payloads with serialized false, and replaces report recipients with an example.com address. |
+| `akismet.php` | Submitted-comment copies, moderation history, moderator logins, the API key and pending/spam/trashed comment bodies, including product reviews. Approved bodies and result/status metadata are kept. |
+| `jetpack-forms.php` | Feedback text and personal metadata, webhook responses/errors, IP-bearing geolocation cache names, Forms signing secrets, private connection tokens and Sync queue payloads. Feedback content becomes `{}`; PrincipalWP's second pass deletes the feedback posts. |
+| `redirection.php` | Request IPs, user agents, referrers and logged headers. Requested URLs and domains are kept. |
+| `credentials.php` | Application passwords, Two Factor secrets/codes/tokens, WooCommerce API/webhook credentials, invoice/PDF access tokens and Metorik cart tokens. |
+| `credentials-easy-digital-downloads.php` | EDD user API keys and cached keys, API log credentials/query strings and license keys, including legacy storage. Unauthenticated API log values recorded as `public` are kept. |
 
 Table names are given without the table prefix. On multisite, subsite tables such as `wp_2_postmeta` use the same rules as `wp_postmeta`.
 
@@ -141,7 +84,7 @@ To force a plugin's rules on or off, use the `wpmdb_anonymization_load_config_fi
 
 ### Credentials
 
-API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The `credentials*.php` rules replace scalar values with numbered placeholders, except TOTP secrets are emptied. Application passwords, Two Factor backup codes and OAuth nonces become empty serialized arrays. The plugin-specific rules listed above also clear option credentials and remove the named Elementor form credentials. Create new keys on the copy if you need working credentials; placeholders do not preserve credential formats.
+API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The `credentials*.php` rules replace scalar values with numbered placeholders, except TOTP secrets are emptied. Application passwords, Two Factor backup codes and OAuth nonces become empty serialized arrays. The plugin-specific rules listed above also clear option credentials. Create new keys on the copy if you need working credentials; placeholders do not preserve credential formats.
 
 WooCommerce webhook delivery URLs become `https://example.com/<ID>` and statuses become `status <ID>`. Affected users need to set up Two Factor again on the copy, or deactivate that plugin there.
 
@@ -217,8 +160,6 @@ Matching scalar fields become `<field label> <N>`, for example `billing first na
 
 Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords and TOTP secrets become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for fields using the password format. Coupon email restrictions use it to store a serialized list containing one placeholder address.
 
-A rule's `replacement_function` receives the complete value after WP Migrate's search/replace instead of a placeholder. Elementor uses this to remove the named form credentials while keeping the migrated document. Nested values still receive WP Migrate's search/replace; the document replacement runs once on the final JSON. Invalid document JSON stops the migration instead of exporting its credentials.
-
 Fields previously cleared to empty serialized arrays or JSON objects keep those empty containers. This covers WordPress sessions, events location and pending email changes; application passwords, backup codes and OAuth nonces; WooCommerce sessions; EDD addresses and payment sources; Gravity Forms drafts; and Redirection request data.
 
 Placeholders depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Hashes and fixed scalar values also receive placeholders.
@@ -229,7 +170,9 @@ Shared metadata rules match keys without looking up the owning post type. A key 
 
 WP Migrate Pro skips the anonymization hooks for serialized `options.option_value` values matching `/r:\d+;/i`, including literal text such as `r:1;`. Those option values can retain credentials or personal data in exports, pushes and pulls, including Jetpack Sync payloads and Simple History caches. This is an accepted limitation; the add-on does not change Pro's reference check.
 
-The form and log rules cover the named versions' database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Generic webhook destinations and dynamic credentials are outside the named Elementor settings. Elementor form names and field identifiers remain configuration; Simple History keeps context key names.
+The form and log rules cover the named versions' database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Simple History keeps context key names.
+
+Elementor per-form API keys and Slack/Discord webhook URLs in `_elementor_data` are kept.
 
 A column shorter than its placeholder can truncate the value and produce an import warning under non-strict SQL mode. Numeric and format-specific fields no longer receive values in their original format.
 
