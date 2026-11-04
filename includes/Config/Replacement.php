@@ -23,6 +23,24 @@ class Replacement {
 	}
 
 	/**
+	 * Clear structured data while retaining its JSON-list format.
+	 *
+	 * @return string
+	 */
+	public static function empty_json_array() {
+		return '[]';
+	}
+
+	/**
+	 * Clear Jetpack feedback while retaining the fields list its JSON reader expects.
+	 *
+	 * @return string
+	 */
+	public static function empty_feedback_json() {
+		return '{"fields":[]}';
+	}
+
+	/**
 	 * Wrap a placeholder in a serialized single-item list, for meta stored as an
 	 * array of values, e.g. coupon email restrictions.
 	 *

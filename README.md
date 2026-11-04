@@ -44,7 +44,7 @@ You can also programmatically control which users are whitelisted with the follo
     
 ## Covered data
 
-The anonymization rules live in the `config` directory, one file per plugin. Order totals, dates, statuses, product data and IDs are never changed, so reports run on an anonymized copy still add up. WooCommerce webhook statuses are also replaced (see [Credentials](#credentials)).
+The anonymization rules live in the `config` directory, one file per plugin. Order totals, order dates and statuses, product data and numeric record IDs are kept, so order reports on an anonymized copy still add up. WooCommerce webhook statuses are also replaced (see [Credentials](#credentials)).
 
 - `wordpress.php` (always loaded)
     - `users`: login, password, nicename, email, URL and display name
@@ -80,6 +80,20 @@ The anonymization rules live in the `config` directory, one file per plugin. Ord
     - `gf_entry_notes` and `rg_lead_notes`: note content and author name
     - `gf_draft_submissions` and `rg_incomplete_submissions` (Save and Continue): email, IP address and source URL; the saved field values and resume token are replaced in exports, pushes and pulls (see [Gravity Forms drafts](#gravity-forms-drafts))
     - `gf_form_view` and `rg_form_view`: IP address
+- `contact-form-7.php` (Flamingo 2.6.4)
+    - `posts`: titles, content, excerpts and email/subject-derived slugs for `flamingo_contact` and `flamingo_inbound`
+    - `postmeta`: contact email/name/properties; message subject/sender, field values, request metadata, spam-service payloads, consent and submitted-data hash. Arrays become empty serialized arrays; scalar fields receive placeholders. Contact dates and submission statuses are kept
+- `elementor-pro.php` (Elementor Pro 4.3.2, classic and Atomic Forms)
+    - `e_submissions`: IP address, user agent, referring URL/title and JSON metadata
+    - `e_submissions_values`: every submitted field value; `e_submissions_actions_log`: action log text
+- `simple-history.php` (Simple History 5.36.0)
+    - `simple_history`: message and the grouping fingerprint derived from logged values; `simple_history_contexts`: every context value, including names, profile changes, comment text, notes and request details. JSON lists/objects become empty containers. Event detail and context classification values are removed too
+- `akismet.php` (Akismet 5.7.2)
+    - `commentmeta`: submitted-comment copies and moderation history become empty serialized arrays; moderator logins receive placeholders. Result/status metadata and original public comment bodies are kept
+- `jetpack-forms.php` (Jetpack 16.4-a.7 Forms)
+    - `posts`: feedback titles, excerpts and author-derived slugs; feedback content becomes `{"fields":[]}`, retaining the list Jetpack's JSON reader requires
+    - `postmeta`: extra answers, spam-check payloads and notification emails become empty serialized arrays; webhook responses become empty JSON objects and webhook errors receive placeholders. Source-page IDs and test flags are kept
+    - `options`: geolocation cache transient names, which contain the submitter IP, receive row-numbered placeholders; country values and timeout values are kept
 - `redirection.php` (Redirection; loaded if a `redirection_404` or `redirection_logs` table exists)
     - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers). The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
 - `credentials.php` (always loaded; see [Credentials](#credentials))
@@ -197,6 +211,10 @@ Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>
 Fields previously cleared to empty serialized arrays or JSON objects keep those empty containers. This covers WordPress sessions, events location and pending email changes; application passwords, backup codes and OAuth nonces; WooCommerce sessions; EDD addresses and payment sources; Gravity Forms drafts; and Redirection request data.
 
 Placeholders depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Hashes and fixed scalar values also receive placeholders.
+
+Shared metadata rules match keys without looking up the owning post type. A key such as Flamingo's `_name` is therefore replaced on any post using that key. Site-specific filters can override these rules.
+
+The form and log rules cover the named versions' database submission/log storage. They do not scrub form definitions, public comment bodies, uploaded files, external service copies or arbitrary third-party storage. Elementor form names and field identifiers remain configuration; Simple History keeps context key names.
 
 A column shorter than its placeholder can truncate the value and produce an import warning under non-strict SQL mode. Numeric and format-specific fields no longer receive values in their original format.
 
