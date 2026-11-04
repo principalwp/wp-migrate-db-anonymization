@@ -170,7 +170,7 @@ Shared metadata rules match keys without looking up the owning post type. A key 
 
 WP Migrate Pro skips the anonymization hooks for serialized `options.option_value` values matching `/r:\d+;/i`, including literal text such as `r:1;`. Those option values can retain credentials or personal data in exports, pushes and pulls, including Jetpack Sync payloads and Simple History caches. This is an accepted limitation; the add-on does not change Pro's reference check.
 
-The form and log rules cover the named versions' database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Simple History keeps context key names.
+The form and log rules cover database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Simple History keeps context key names.
 
 Elementor per-form API keys and Slack/Discord webhook URLs in `_elementor_data` are kept.
 
