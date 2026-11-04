@@ -17,7 +17,7 @@ class ShippedConfigTest extends TestCase {
 	 *
 	 * @var string[]
 	 */
-	protected static $rule_keys = array( 'fake_data_type', 'post_process_function', 'constraint' );
+	protected static $rule_keys = array( 'fake_data_type', 'post_process_function', 'replacement_function', 'constraint' );
 
 	/**
 	 * One data set per rule: file, table, column, rule index and rule data.
@@ -75,6 +75,9 @@ class ShippedConfigTest extends TestCase {
 	 * @dataProvider rule_provider
 	 */
 	public function test_callbacks_are_callable( $table, $column, array $rule ) {
+		if ( isset( $rule['replacement_function'] ) ) {
+			$this->assertTrue( is_callable( $rule['replacement_function'] ), 'replacement_function is callable.' );
+		}
 		if ( isset( $rule['post_process_function'] ) ) {
 			$this->assertTrue( is_callable( $rule['post_process_function'] ), 'post_process_function is callable.' );
 		}
@@ -104,7 +107,7 @@ class ShippedConfigTest extends TestCase {
 		$object = new Rule( $table, $column );
 		$object->load( $rule );
 
-		$value = $object->anonymize( $this->row( array( 'ID' => 7 ) ) );
+		$value = $object->anonymize_value( $this->row( array( 'ID' => 7 ) ), '[]' );
 
 		$this->assertIsString( $value );
 		if ( isset( $rule['fake_data_type'] ) && 'password' === $rule['fake_data_type'] ) {

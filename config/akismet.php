@@ -1,5 +1,19 @@
 <?php
 return array(
+	'options'     => array(
+		'option_value' => array(
+			'constraint'     => array( 'option_name' => 'wordpress_api_key' ),
+			'fake_data_type' => 'password',
+		),
+	),
+	'comments'    => array(
+		'comment_content' => array(
+			'constraint' => array(
+				'comment_type'     => array( 'comment', '', 'pingback', 'trackback' ),
+				'comment_approved' => array( '0', 'spam', 'trash', 'post-trashed' ),
+			),
+		),
+	),
 	'commentmeta' => array(
 		'meta_value' => array(
 			array(

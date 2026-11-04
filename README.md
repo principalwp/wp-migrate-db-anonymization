@@ -82,18 +82,25 @@ The anonymization rules live in the `config` directory, one file per plugin. Ord
     - `gf_form_view` and `rg_form_view`: IP address
 - `contact-form-7.php` (Flamingo 2.6.4)
     - `posts`: titles, content, excerpts and email/subject-derived slugs for `flamingo_contact` and `flamingo_inbound`
-    - `postmeta`: contact email/name/properties; message subject/sender, field values, request metadata, spam-service payloads, consent and submitted-data hash. Arrays become empty serialized arrays; scalar fields receive placeholders. Contact dates and submission statuses are kept
+    - `postmeta`: contact email/name/properties; message subject/sender, field values, request metadata, spam-service payloads and consent. Arrays become empty serialized arrays; scalar fields receive placeholders. Contact dates and submission statuses are kept
 - `elementor-pro.php` (Elementor Pro 4.3.2, classic and Atomic Forms)
     - `e_submissions`: IP address, user agent, referring URL/title and JSON metadata
     - `e_submissions_values`: every submitted field value; `e_submissions_actions_log`: action log text
+    - `options`: the Mailchimp, ActiveCampaign, ConvertKit, Drip, GetResponse and MailerLite API credentials become empty strings
+    - `postmeta._elementor_data`: removes those six services' custom API credentials and Slack/Discord webhook URLs from Forms widgets, including templates and revisions. Other document settings and layout are kept, with WP Migrate's URL replacements
 - `simple-history.php` (Simple History 5.36.0)
     - `simple_history`: message and the grouping fingerprint derived from logged values; `simple_history_contexts`: every context value, including names, profile changes, comment text, notes and request details. JSON lists/objects become empty containers. Event detail and context classification values are removed too
+    - `options`: the RSS bearer secret becomes empty; quick-stat and oldest-event transient payloads become serialized false so their readers recompute; email report recipients become one numbered example.com address
 - `akismet.php` (Akismet 5.7.2)
     - `commentmeta`: submitted-comment copies and moderation history become empty serialized arrays; moderator logins receive placeholders. Result/status metadata and original public comment bodies are kept
+    - `comments`: bodies of ordinary comments, legacy comments, pingbacks and trackbacks receive placeholders when pending, spam, trashed or attached to a trashed post. Approved bodies and other comment types are kept
+    - `options.wordpress_api_key`: becomes an empty string
 - `jetpack-forms.php` (Jetpack 16.4-a.7 Forms)
     - `posts`: feedback titles, excerpts and author-derived slugs; feedback content becomes `{"fields":[]}`, retaining the list Jetpack's JSON reader requires
     - `postmeta`: extra answers, spam-check payloads and notification emails become empty serialized arrays; webhook responses become empty JSON objects and webhook errors receive placeholders. Source-page IDs and test flags are kept
     - `options`: geolocation cache transient names, which contain the submitter IP, receive row-numbered placeholders; country values and timeout values are kept
+    - `options`: the Forms signing secret becomes empty and `jetpack_private_options` becomes an empty serialized array, removing connection tokens
+    - Jetpack Sync queue payloads in `jpsq_<queue>-...` options and `jetpack_sync_queue.event_payload` become empty serialized arrays. Copied option names and table queue IDs receive numbered placeholders, so the rows are no longer selected by the live queues. Production queues are unchanged
 - `redirection.php` (Redirection; loaded if a `redirection_404` or `redirection_logs` table exists)
     - `redirection_404` and `redirection_logs`: IP address, user agent, referrer and request data (logged HTTP headers). The requested URL and domain are kept so the logs stay useful, so personal data in a logged URL's query string is not removed
 - `credentials.php` (always loaded; see [Credentials](#credentials))
@@ -132,13 +139,13 @@ To force a plugin's rules on or off, use the `wpmdb_anonymization_load_config_fi
 
 ### Credentials
 
-API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The credential rules replace scalar values with numbered placeholders, except TOTP secrets are emptied. Application passwords, Two Factor backup codes and OAuth nonces become empty serialized arrays. Create new keys on the copy if you need working credentials; placeholders do not preserve credential formats.
+API keys, tokens and secrets give access to the live site, its customers' orders and downloads, or external services. The `credentials*.php` rules replace scalar values with numbered placeholders, except TOTP secrets are emptied. Application passwords, Two Factor backup codes and OAuth nonces become empty serialized arrays. The plugin-specific rules listed above also clear option credentials and remove the named Elementor form credentials. Create new keys on the copy if you need working credentials; placeholders do not preserve credential formats.
 
 WooCommerce webhook delivery URLs become `https://example.com/<ID>` and statuses become `status <ID>`. Affected users need to set up Two Factor again on the copy, or deactivate that plugin there.
 
 Easy Digital Downloads credentials are in `credentials-easy-digital-downloads.php`, loaded on sites with EDD data. API keys stored in `meta_key` become `meta key <user ID>`, so their original values do not appear in labels. Cached API keys are replaced when a transient has both an MD5-style name and value, so a cache another plugin stores in that form is replaced too. Sites with a persistent object cache keep transients there instead of in the database.
 
-To keep the original credentials, turn both files off:
+To keep the credentials covered by `credentials.php` and `credentials-easy-digital-downloads.php`, turn both files off. This leaves the plugin-specific credential rules enabled:
 
     add_filter( 'wpmdb_anonymization_load_config_file', function ( $load, $name ) {
         return 0 === strpos( $name, 'credentials' ) ? false : $load;
@@ -208,13 +215,15 @@ Matching scalar fields become `<field label> <N>`, for example `billing first na
 
 Email fields become `email<N>@example.com`, URLs become `https://example.com/<N>`, and passwords and TOTP secrets become empty strings. Existing empty values stay empty. A rule's `post_process_function` receives the placeholder, except for fields using the password format. Coupon email restrictions use it to store a serialized list containing one placeholder address.
 
+A rule's `replacement_function` receives the complete value after WP Migrate's search/replace instead of a placeholder. Elementor uses this to remove the named form credentials while keeping the migrated document. Nested values still receive WP Migrate's search/replace; the document replacement runs once on the final JSON. Invalid document JSON stops the migration instead of exporting its credentials.
+
 Fields previously cleared to empty serialized arrays or JSON objects keep those empty containers. This covers WordPress sessions, events location and pending email changes; application passwords, backup codes and OAuth nonces; WooCommerce sessions; EDD addresses and payment sources; Gravity Forms drafts; and Redirection request data.
 
 Placeholders depend on row IDs rather than original contents, so the same row gets the same placeholder on each download. They do not preserve joins based on original personal values across unrelated records. Hashes and fixed scalar values also receive placeholders.
 
 Shared metadata rules match keys without looking up the owning post type. A key such as Flamingo's `_name` is therefore replaced on any post using that key. Site-specific filters can override these rules.
 
-The form and log rules cover the named versions' database submission/log storage. They do not scrub form definitions, public comment bodies, uploaded files, external service copies or arbitrary third-party storage. Elementor form names and field identifiers remain configuration; Simple History keeps context key names.
+The form and log rules cover the named versions' database submission/log storage and the credentials listed above. Other form settings, approved comment bodies (including those on private or password-protected posts), uploaded files, external service copies and arbitrary third-party storage are kept. Generic webhook destinations and dynamic credentials are outside the named Elementor settings. Elementor form names and field identifiers remain configuration; Simple History keeps context key names.
 
 A column shorter than its placeholder can truncate the value and produce an import warning under non-strict SQL mode. Numeric and format-specific fields no longer receive values in their original format.
 

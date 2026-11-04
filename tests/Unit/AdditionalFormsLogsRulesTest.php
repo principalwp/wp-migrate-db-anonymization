@@ -33,7 +33,6 @@ class AdditionalFormsLogsRulesTest extends TestCase {
 			'Flamingo contact email'    => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_email' ), 'email7@example.com' ),
 			'Flamingo subject'          => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_subject' ), 'subject 7' ),
 			'Flamingo sender header'    => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_from' ), 'from 7' ),
-			'Flamingo submission hash'  => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_hash' ), 'hash 7' ),
 			'Flamingo contact date'     => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_last_contacted' ), 'private data' ),
 			'Flamingo status'           => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => '_submission_status' ), 'private data' ),
 			'Flamingo anchored prefix'  => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_key' => 'other_field_phone' ), 'private data' ),

@@ -29,7 +29,30 @@ return array(
 	'options'  => array(
 		// Jetpack's country lookup embeds the visitor IP in both transient names.
 		'option_name' => array(
-			'constraint' => array( 'option_name' => array( 'regex' => '/^_transient_(timeout_)?geoip_/' ) ),
+			array(
+				'constraint' => array( 'option_name' => array( 'regex' => '/^_transient_(timeout_)?geoip_/' ) ),
+			),
+			array(
+				'constraint' => array( 'option_name' => array( 'regex' => '/^jpsq_[^-]+-/' ) ),
+			),
 		),
+		'option_value' => array(
+			array(
+				'constraint'     => array( 'option_name' => 'jetpack_forms_secret_key' ),
+				'fake_data_type' => 'password',
+			),
+			array(
+				'constraint'            => array( 'option_name' => 'jetpack_private_options' ),
+				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
+			),
+			array(
+				'constraint'            => array( 'option_name' => array( 'regex' => '/^jpsq_[^-]+-/' ) ),
+				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',
+			),
+		),
+	),
+	'jetpack_sync_queue' => array(
+		'queue_id'      => array(),
+		'event_payload' => array( 'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array' ),
 	),
 );

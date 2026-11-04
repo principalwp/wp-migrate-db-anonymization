@@ -50,7 +50,7 @@ class Anonymizer {
 			return $value;
 		}
 
-		return $rule->anonymize( $row );
+		return $rule->anonymize_value( $row, $value );
 	}
 
 	/**

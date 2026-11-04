@@ -26,6 +26,11 @@ class Rule {
 	protected $post_process_function;
 
 	/**
+	 * @var callable
+	 */
+	protected $replacement_function;
+
+	/**
 	 * @var
 	 */
 	protected $constraint;
@@ -130,6 +135,30 @@ class Rule {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether the rule transforms a complete value instead of a placeholder.
+	 *
+	 * @return bool
+	 */
+	public function replaces_whole_value() {
+		return (bool) $this->replacement_function;
+	}
+
+	/**
+	 * Transform the current migrated value, or generate its row's placeholder.
+	 *
+	 * @param object $row Original row used for labels and record IDs.
+	 * @param mixed  $value Value after WP Migrate's search/replace.
+	 * @return mixed
+	 */
+	public function anonymize_value( $row, $value ) {
+		if ( $this->replaces_whole_value() ) {
+			return call_user_func( $this->replacement_function, $value );
+		}
+
+		return $this->anonymize( $row );
 	}
 
 	/**

@@ -12,7 +12,7 @@ return array(
 	),
 	'postmeta' => array(
 		'meta_value' => array(
-			array( 'constraint' => array( 'meta_key' => array( '_email', '_name', '_subject', '_from', '_from_name', '_from_email', '_hash' ) ) ),
+			array( 'constraint' => array( 'meta_key' => array( '_email', '_name', '_subject', '_from', '_from_name', '_from_email' ) ) ),
 			array(
 				'constraint'            => array( 'meta_key' => array( '_props', '_fields', '_meta', '_akismet', '_recaptcha', '_spam_log', '_consent' ) ),
 				'post_process_function' => 'WPMDB\\Anonymization\\Config\\Replacement::empty_serialized_array',

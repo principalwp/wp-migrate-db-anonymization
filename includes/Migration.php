@@ -30,7 +30,27 @@ class Migration {
 	 * Register hooks
 	 */
 	public function register() {
+		add_filter( 'wpmdb_before_replace_custom_data', array( $this, 'hook_wpmdb_before_replace_custom_data' ), 10, 2 );
 		add_filter( 'wpmdb_after_replace_custom_data', array( $this, 'hook_wpmdb_after_replace_custom_data' ), 10, 3 );
+	}
+
+	/**
+	 * Let WP Migrate replace nested URLs, then transform the completed value once.
+	 *
+	 * @param array $data WP Migrate's value, before-fired and successive-filter tuple.
+	 * @param object $wpmdb_replace
+	 * @return array
+	 */
+	public function hook_wpmdb_before_replace_custom_data( $data, $wpmdb_replace ) {
+		if ( $this->is_allowed_migration_type( $wpmdb_replace->get_intent() ) ) {
+			$table = $this->config->clean_table( $wpmdb_replace->get_table() );
+			$rule  = $this->anonymizer->matching_rule( $table, $wpmdb_replace->get_column(), $wpmdb_replace->get_row() );
+			if ( null !== $rule && $rule->replaces_whole_value() ) {
+				$data[2] = false;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
