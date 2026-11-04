@@ -5,6 +5,15 @@ namespace WPMDB\Anonymization\Config;
 class Replacement {
 
 	/**
+	 * Mark a WordPress transient as a cache miss after import.
+	 *
+	 * @return string
+	 */
+	public static function serialized_false() {
+		return 'b:0;';
+	}
+
+	/**
 	 * Clear structured data while retaining its serialized-array format.
 	 *
 	 * @return string
@@ -20,6 +29,15 @@ class Replacement {
 	 */
 	public static function empty_json_object() {
 		return '{}';
+	}
+
+	/**
+	 * Clear structured data while retaining its JSON-list format.
+	 *
+	 * @return string
+	 */
+	public static function empty_json_array() {
+		return '[]';
 	}
 
 	/**

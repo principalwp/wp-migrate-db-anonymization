@@ -147,6 +147,22 @@ class MigrationTest extends TestCase {
 			'Redirection 404'      => array( 'redirection', 'redirection_404', 'request_data', array( 'id' => 10 ), $json, '{}' ),
 			'Redirection log'      => array( 'redirection', 'redirection_logs', 'request_data', array( 'id' => 11 ), $json, '{}' ),
 			'EDD payment source'   => array( 'easy-digital-downloads', 'edd_payment_tokens', 'payment_source', array( 'id' => 12 ), $json, '{}' ),
+			'CF7 settings'          => array( 'contact-form-7', 'options', 'option_value', array( 'option_id' => 7, 'option_name' => 'wpcf7' ), serialize( array( 'version' => '6.2.4.1', 'stripe' => array( 'secret' => 'production-secret' ) ) ), 'a:0:{}' ),
+			'Flamingo properties'   => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_id' => 90, 'post_id' => 7, 'meta_key' => '_props' ), $serialized, 'a:0:{}' ),
+			'Flamingo array field'  => array( 'contact-form-7', 'postmeta', 'meta_value', array( 'meta_id' => 90, 'post_id' => 7, 'meta_key' => '_field_choices' ), $serialized, 'a:0:{}' ),
+			'Akismet submission'    => array( 'akismet', 'commentmeta', 'meta_value', array( 'meta_id' => 90, 'comment_id' => 7, 'meta_key' => 'akismet_as_submitted' ), $serialized, 'a:0:{}' ),
+			'Elementor Connect'     => array( 'elementor-pro', 'usermeta', 'meta_value', array( 'umeta_id' => 90, 'user_id' => 7, 'meta_key' => 'wp_elementor_connect_common_data' ), serialize( array( 'access_token' => 'production-secret' ) ), 'a:0:{}' ),
+			'Elementor JSON object' => array( 'elementor-pro', 'e_submissions', 'meta', array( 'id' => 7 ), $json, '{}' ),
+			'Elementor JSON list'   => array( 'elementor-pro', 'e_submissions', 'meta', array( 'id' => 7 ), '["jane@example.org"]', '[]' ),
+			'History JSON object'   => array( 'simple-history', 'simple_history_contexts', 'value', array( 'context_id' => 7, 'history_id' => 9, 'key' => 'export_data' ), $json, '{}' ),
+			'History JSON list'     => array( 'simple-history', 'simple_history_contexts', 'value', array( 'context_id' => 8, 'history_id' => 9, 'key' => 'post_terms_added' ), '[{"name":"Jane"}]', '[]' ),
+			'History cache'         => array( 'simple-history', 'options', 'option_value', array( 'option_id' => 7, 'option_name' => '_transient_sh_oldest_event' ), $serialized, 'b:0;' ),
+			'Jetpack feedback meta' => array( 'jetpack-forms', 'postmeta', 'meta_value', array( 'meta_id' => 90, 'post_id' => 7, 'meta_key' => '_feedback_email' ), $serialized, 'a:0:{}' ),
+			'Jetpack webhook JSON'  => array( 'jetpack-forms', 'postmeta', 'meta_value', array( 'meta_id' => 90, 'post_id' => 7, 'meta_key' => '_jetpack_forms_webhook_response' ), $json, '{}' ),
+			'Jetpack feedback JSON' => array( 'jetpack-forms', 'posts', 'post_content', array( 'ID' => 7, 'post_type' => 'feedback' ), '{"fields":[{"value":"jane@example.org"}]}', '{}' ),
+			'Jetpack tokens'        => array( 'jetpack-forms', 'options', 'option_value', array( 'option_id' => 7, 'option_name' => 'jetpack_private_options' ), $serialized, 'a:0:{}' ),
+			'Jetpack option queue'  => array( 'jetpack-forms', 'options', 'option_value', array( 'option_id' => 7, 'option_name' => 'jpsq_sync-1767225600.250000-123456-1' ), $serialized, 'a:0:{}' ),
+			'Jetpack table queue'   => array( 'jetpack-forms', 'jetpack_sync_queue', 'event_payload', array( 'ID' => 7, 'queue_id' => 'sync' ), $serialized, 'a:0:{}' ),
 		);
 	}
 
